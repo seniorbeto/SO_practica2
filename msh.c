@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
 			}
 			else {
 				// Print command
-				print_command(argvv, filev, in_background);
+				//print_command(argvv, filev, in_background);
 
 				// Ahora, creamos tantos procesos como la variable command_counter indique
 				int pid;
@@ -137,16 +137,19 @@ int main(int argc, char* argv[])
 			        // Estás en el padre
 			        pid = fork();
 			        if (pid < 0){
-			        perror("Error en la creación del proceso");
+			        	perror("Error en la creación del proceso");
 			        }
-			        i++;
+					i++;
 			        if (pid == 0){
 			            // Estás en el hijo
-						// Ahora, ejecutamos la instrucción introducida como parámetro		
-						if (execvp(argvv[i-1][0], argvv[0]) == -1){
-							perror("Error en la ejecución del mandato");
-						}
-			            ;
+						// Ahora, ejecutamos la instrucción introducida como parámetro
+						int j = 0;
+						while (argvv[i-1][j] != NULL){
+							if (execvp(argvv[i-1][j], argvv[i-1]) == -1){
+								perror("Error en la ejecución del mandato");
+							}
+							j++;
+						}	
 			            exit(0);
 			        }
 			    }
