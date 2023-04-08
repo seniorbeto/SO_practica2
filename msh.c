@@ -121,15 +121,41 @@ int main(int argc, char* argv[])
 		}
 		//************************************************************************************************
 
-
 		/************************ STUDENTS CODE ********************************/
 		if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
 				printf("Error: Numero máximo de comandos es %d \n", MAX_COMMANDS);
 			}
 			else {
-				// Print command AQUÍ HAY QUE HACER LAS COSAS
+				// Print command
 				print_command(argvv, filev, in_background);
+
+				// Ahora, creamos tantos procesos como la variable command_counter indique
+				int pid;
+			    int i = 0;
+			    while (i < command_counter && pid > 0){
+			        // Estás en el padre
+			        pid = fork();
+			        if (pid < 0){
+			        perror("Error en la creación del proceso");
+			        }
+			        i++;
+			        if (pid == 0){
+			            // Estás en el hijo
+						// Ahora, ejecutamos la instrucción introducida como parámetro		
+						if (execvp(argvv[i-1][0], argvv[0]) == -1){
+							perror("Error en la ejecución del mandato");
+						}
+			            ;
+			            exit(0);
+			        }
+			    }
+				// Ahora esperamos a que todos los hijos terminen de ejecutarse
+			    int j;
+			    for (j=0;j<command_counter;j++){
+			        wait(NULL);
+			    }
+
 			}
 		}
 	}
