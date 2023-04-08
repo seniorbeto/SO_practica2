@@ -35,6 +35,40 @@ void siginthandler(int param)
 	exit(0);
 }
 
+int read_command(char ***argvv, char filev[3][64], int *in_background)
+{
+	// Read command
+	char *cmd = (char*)malloc(100);
+	scanf(" %[^\n]", cmd);
+
+	// Free memory
+	free(cmd);
+}
+
+void print_command(char **argvv, char filev[3][64], int in_background)
+{
+	// Print command
+	int i = 0;
+	while (argvv[i] != NULL) {
+		printf("argvv[%d] = %s \n", i, argvv[i]);
+		i++;
+	}
+
+	// Print filev
+	printf("filev[0] = %s \n", filev[0]);
+	printf("filev[1] = %s \n", filev[1]);
+	printf("filev[2] = %s \n", filev[2]);
+
+	// Print in_background
+	printf("in_background = %d \n", in_background);
+}
+
+int read_command_correction(char ***argvv, char filev[3][64], int *in_background, char *cmd_line)
+{
+
+	// Free memory
+	free(cmd_line);
+}
 
 /* Timer */
 pthread_t timer_thread;
