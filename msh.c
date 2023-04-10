@@ -18,6 +18,8 @@
 #include <time.h>
 #include <pthread.h>
 
+// Está limitado a ocho pero nuestra implementación contempla un
+// número ilimitado de comandos
 #define MAX_COMMANDS 8
 
 
@@ -120,11 +122,11 @@ int main(int argc, char* argv[])
 			command_counter = read_command(&argvv, filev, &in_background); //NORMAL MODE
 		}
 		//************************************************************************************************
-
+		
 		/************************ STUDENTS CODE ********************************/
 		if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
-				printf("Error: Numero máximo de comandos es %d \n", MAX_COMMANDS);
+				printf("Error: Número máximo de comandos es %d \n", MAX_COMMANDS);
 			}
 			else {
 				// Print command
@@ -132,33 +134,59 @@ int main(int argc, char* argv[])
 
 				// Ahora, creamos tantos procesos como la variable command_counter indique
 				int pid;
-			    int i = 0;
-			    while (i < command_counter && pid > 0){
-			        // Estás en el padre
-			        pid = fork();
-			        if (pid < 0){
-			        	perror("Error en la creación del proceso");
-			        }
-					i++;
-			        if (pid == 0){
-			            // Estás en el hijo
+				int i = 0;
+				int indicador;
+				if (command_counter > 1) {indicador = 1;} else {indicador = 0;};
+				int fd[command_counter-1];
+				pid = fork();
+				if (pid < 0){
+					perror("Error en la creación del proceso");
+				}
+				while (i < command_counter && pid == 0){
+					// Estás en el hijo
+					i++;	
+						
+					// Generamos las tuberías necesarias
+					if (indicador == 1){
+						if (pipe(fd) < 0){
+							perror("Error de creación de tubería");
+						}
+					}
+
+					// Si quedan mandatos por ejecutar, creamos otro hijo
+					if (i != command_counter){
+						pid = fork();
+						if (pid < 0){
+							perror("Error en la creación del proceso");
+						}
+					}
+					// El padre esperará a sus hijos 
+					if (pid > 0 || i == command_counter){
+						// Si el proceso se ejecuta en Background, se imprime su pid
+						if (in_background == 1){
+							printf("%d\n", getpid());
+						}
 						// Ahora, ejecutamos la instrucción introducida como parámetro
 						int j = 0;
-						while (argvv[i-1][j] != NULL){
-							if (execvp(argvv[i-1][j], argvv[i-1]) == -1){
+						printf("Se va a ejecutar: %s. El pid de su padre es: %d\n", argvv[command_counter-i][j], getppid());
+						wait(NULL);
+						// Vamos de atrás a delante para que se ejecuten primero los primeros comandos
+						while (argvv[command_counter-i][j] != NULL){
+							if (execvp(argvv[command_counter-i][j], argvv[command_counter-i]) == -1){
 								perror("Error en la ejecución del mandato");
 							}
 							j++;
-						}	
-			            exit(0);
-			        }
-			    }
+						}
+						// Finalmente, terminamos el proceso <-------------------------
+						return(status);
+					}
+				}
+			
 				// Ahora esperamos a que todos los hijos terminen de ejecutarse
-			    int j;
+				int j;
 			    for (j=0;j<command_counter;j++){
 			        wait(NULL);
 			    }
-
 			}
 		}
 	}
