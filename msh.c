@@ -137,21 +137,21 @@ int main(int argc, char* argv[])
 				int i = 0;
 				int indicador;
 				if (command_counter > 1) {indicador = 1;} else {indicador = 0;};
-				int fd[command_counter-1];
+				// Generamos el proceso para el primer comando
 				pid = fork();
 				if (pid < 0){
 					perror("Error en la creación del proceso");
 				}
-				while (i < command_counter && pid == 0){
-					// Estás en el hijo
-					i++;	
-						
-					// Generamos las tuberías necesarias
-					if (indicador == 1){
-						if (pipe(fd) < 0){
-							perror("Error de creación de tubería");
-						}
+				// Reutilizaremos la misma tubería
+				int fd[3];
+				if (indicador == 1 && i != command_counter){
+					if (pipe(fd) < 0){
+						perror("Error de creación de tubería");
 					}
+				}
+				while (i < command_counter && pid == 0){
+					// Estás en el	 hijo
+					i++;	
 
 					// Si quedan mandatos por ejecutar, creamos otro hijo
 					if (i != command_counter){
@@ -162,14 +162,35 @@ int main(int argc, char* argv[])
 					}
 					// El padre esperará a sus hijos 
 					if (pid > 0 || i == command_counter){
+						
 						// Si el proceso se ejecuta en Background, se imprime su pid
 						if (in_background == 1){
 							printf("%d\n", getpid());
 						}
 						// Ahora, ejecutamos la instrucción introducida como parámetro
 						int j = 0;
-						printf("Se va a ejecutar: %s. El pid de su padre es: %d\n", argvv[command_counter-i][j], getppid());
+						//printf("Se va a ejecutar: %s. El pid de su padre es: %d\n", argvv[command_counter-i][j], getppid());
+						
 						wait(NULL);
+						// Si es el último proceso (primer mandato), únicamente establecemos
+						// la salida como la entrada del anterior 
+						if (i != command_counter){
+							// Cambiamos la entrada
+							close(fd[1]);
+							close(STDIN_FILENO);
+							dup(fd[0]);
+							close(fd[0]);
+						}
+						// Si es el primero (es decir, el último comando),
+						// no cambiamos la salida
+						if (i != 1){
+							// Cambiamos la salida 
+							close(fd[0]);
+							close(STDOUT_FILENO);
+							dup(fd[1]);
+							close(fd[1]);
+						}
+						
 						// Vamos de atrás a delante para que se ejecuten primero los primeros comandos
 						while (argvv[command_counter-i][j] != NULL){
 							if (execvp(argvv[command_counter-i][j], argvv[command_counter-i]) == -1){
