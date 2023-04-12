@@ -135,30 +135,30 @@ int main(int argc, char* argv[])
 				// Ahora, creamos tantos procesos como la variable command_counter indique
 				int pid;
 				int i = 0;
-				int indicador;
-				if (command_counter > 1) {indicador = 1;} else {indicador = 0;};
 				// Generamos el proceso para el primer comando
 				pid = fork();
 				if (pid < 0){
 					perror("Error en la creación del proceso");
 				}
-				// Reutilizaremos la misma tubería
-				int fd[3];
-				if (indicador == 1 && i != command_counter){
-					if (pipe(fd) < 0){
-						perror("Error de creación de tubería");
+				// Generamos las tuberías necesarias
+				int fd[command_counter-1][2];
+				if (pid == 0){
+					int cont;
+					for(cont=0; cont < command_counter-1; cont++){
+						pipe(fd[cont]);
 					}
 				}
 				while (i < command_counter && pid == 0){
-					// Estás en el	 hijo
+					// Estás en el hijo
 					i++;	
-
+					
 					// Si quedan mandatos por ejecutar, creamos otro hijo
 					if (i != command_counter){
 						pid = fork();
 						if (pid < 0){
 							perror("Error en la creación del proceso");
 						}
+						
 					}
 					// El padre esperará a sus hijos 
 					if (pid > 0 || i == command_counter){
@@ -169,45 +169,51 @@ int main(int argc, char* argv[])
 						}
 						// Ahora, ejecutamos la instrucción introducida como parámetro
 						int j = 0;
-						//printf("Se va a ejecutar: %s. El pid de su padre es: %d\n", argvv[command_counter-i][j], getppid());
-						
 						wait(NULL);
-						// Si es el último proceso (primer mandato), únicamente establecemos
-						// la salida como la entrada del anterior 
+						//printf("Se va a ejecutar: %s. El pid de su padre es: %d\n", argvv[command_counter-i][0], getppid());						
+						
+						// Si es el último proceso, es decir, el primer comando no cambiaremos
+						// su entrada
 						if (i != command_counter){
-							// Cambiamos la entrada
-							close(fd[1]);
-							close(STDIN_FILENO);
-							dup(fd[0]);
-							close(fd[0]);
+							// De los que no son el último, cambiamos su entrada
+							dup2(fd[i-1][0], STDIN_FILENO);
+							close(fd[i-1][1]);
+							if (i != 1){
+								close(fd[i-2][0]);
+								close(fd[i-2][1]);
+							}
 						}
-						// Si es el primero (es decir, el último comando),
-						// no cambiamos la salida
-						if (i != 1){
-							// Cambiamos la salida 
-							close(fd[0]);
-							close(STDOUT_FILENO);
-							dup(fd[1]);
-							close(fd[1]);
+
+						// Si es el primer proceso, es decir, el último comando, no cambiaremos 
+						// su salida. 
+						if(i != 1){
+							// Del resto, cambiamos su salida
+							dup2(fd[i-2][1], STDOUT_FILENO);
+							close(fd[i-2][0]);
+							if (i != command_counter){
+								close(fd[i-1][0]);
+								close(fd[i-1][1]);
+							}
 						}
 						
 						// Vamos de atrás a delante para que se ejecuten primero los primeros comandos
-						while (argvv[command_counter-i][j] != NULL){
-							if (execvp(argvv[command_counter-i][j], argvv[command_counter-i]) == -1){
-								perror("Error en la ejecución del mandato");
-							}
-							j++;
-						}
+						execvp(argvv[command_counter-i][0], argvv[command_counter-i]);
+						perror("Error en la ejecución del mandato");
+
 						// Finalmente, terminamos el proceso <-------------------------
 						return(status);
 					}
 				}
-			
-				// Ahora esperamos a que todos los hijos terminen de ejecutarse
-				int j;
-			    for (j=0;j<command_counter;j++){
-			        wait(NULL);
-			    }
+				// Ahora esperamos a que termine su hijo
+			    wait(NULL);
+				// Cerramos los descriptores
+				int tube;
+				for (tube = 0; tube < command_counter; tube++){
+					close(fd[tube][0]);
+					close(fd[tube][1]);
+				}
+				dup2(STDIN_FILENO, 1);
+				dup2(STDOUT_FILENO, 0);
 			}
 		}
 	}
