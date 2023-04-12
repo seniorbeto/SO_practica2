@@ -29,6 +29,101 @@ char filev[3][64];
 //to store the execvp second parameter
 char *argv_execvp[8];
 
+double log(int b,double n) {
+    double val = 0;
+    int i,accurate = 10,reps=0;
+    while(n != 1 && accurate>=0) {
+        for(i=0;n>=b;i++) n /= b;
+            n = p(n,10);
+            val = 10*(val+i);
+            accurate--; reps++;
+    }
+    return (double)val/p(10,reps);
+}
+
+double p(double x,int i) {
+    double r = 1.0;
+    for(i;i>0;i--) r *= x;
+    return r;
+}
+
+// Mandato interno mycalc (add, mul, div):
+int mycalc(char *argvv[]){
+	// El mandato debe obtener exactamente 4 argumentos
+	if(argvv[1] == NULL || argvv[2] == NULL || argvv[3] == NULL || argvv[4] != NULL){
+		printf("[ERROR] La estructura del comando es mycalc <operando 1> <add/mul/div> <operando 2>\n");
+		return -1;
+	}
+	
+	// El mandato debe recibir el primer argumento como 'mycalc', los 
+	// operandos como numeros y el operador solo puede ser add, mul y div
+	if((strcmp(argvv[0], "mycalc") != 0) || 
+		(atoi(argvv[1]) == 0  && strcmp(argvv[1], "0") != 0)|| 
+		((strcmp(argvv[2], "add") != 0) && (strcmp(argvv[2], "mul") != 0) && (strcmp(argvv[2], "div") != 0))|| 
+		(atoi(argvv[3]) == 0 && strcmp(argvv[3], "0") != 0)){
+
+		printf("[ERROR] La estructura del comando es mycalc <operando 1> <add/mul/div> <operando 2>\n");
+		return -1;
+	}
+	
+	int Resto;
+	int Cociente;
+	int Resultado;
+	// Realizamos la suma
+	if(strcmp(argvv[2], "add") == 0){
+		Resultado = atoi(argvv[1]) + atoi(argvv[3]);
+		// Creamos la variable de entorno Acc que guardará los resultados de las
+		// sumas
+		char *Acc;
+		double valor;
+		if (getenv("Acc") == NULL){
+			valor = 0;
+		}
+		else{
+			valor = atoi(getenv("Acc"));
+		}
+		// Actualizamos el valor de Acc 
+		valor += Resultado;
+		// Lo pasamos a string
+		int digitos = (log10(valor) + 1);
+		char str_valor[sizeof(char)*digitos];
+		sprintf(str_valor,"%f", valor);
+
+		Acc = malloc(sizeof(str_valor) + 6);
+		strcpy(Acc, "Acc");
+		strcat(Acc, "=");
+		strcat(Acc, str_valor);
+
+		if(putenv(Acc) != 0){
+			printf("[ERROR] Fallo en la creación de la variable de entorno");
+			free(Acc);
+			return -1;
+		}
+		// Actualizamos el valor de Acc
+		// Mostramos resultado por la salida estándar de error
+		fprintf(stderr, "[OK] %s + %s = %d; Acc %d\n", argvv[1], argvv[3], Resultado, atoi(getenv("Acc")));
+	}
+	
+	// Realizamos la multiplicación
+	else if(strcmp(argvv[2], "mul") == 0){
+		Resultado = atoi(argvv[1]) * atoi(argvv[3]);
+		// Mostramos resultado por la salida estándar de error
+		fprintf(stderr, "[OK] %s * %s = %d\n", argvv[1], argvv[3], Resultado);
+	}
+
+	// Realizamos la división
+	else{
+		if(atoi(argvv[3]) == 0){
+			printf("[ERROR] No se puede dividir por 0\n");
+			return -1;
+		}
+		Resto = atoi(argvv[1]) % atoi(argvv[3]);
+		Cociente = (atoi(argvv[1]) - Resto) / atoi(argvv[3]);
+		// Mostramos resultado por la salida estándar de error
+		fprintf(stderr, "[OK] %s / %s = %d Resto %d\n", argvv[1], argvv[3], Cociente, Resto);
+	}
+}
+
 
 void siginthandler(int param)
 {
@@ -124,7 +219,10 @@ int main(int argc, char* argv[])
 		//************************************************************************************************
 		
 		/************************ STUDENTS CODE ********************************/
-		if (command_counter > 0) {
+		if (strcmp(argvv[0][0], "mycalc") == 0){
+			mycalc(argvv[0]);
+		}
+		else if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
 				printf("Error: Número máximo de comandos es %d \n", MAX_COMMANDS);
 			}
@@ -145,6 +243,7 @@ int main(int argc, char* argv[])
 				if (pid == 0){
 					int cont;
 					for(cont=0; cont < command_counter-1; cont++){
+						// PONER IF DE ERROR
 						pipe(fd[cont]);
 					}
 				}
@@ -177,6 +276,7 @@ int main(int argc, char* argv[])
 						if (i != command_counter){
 							// De los que no son el último, cambiamos su entrada
 							dup2(fd[i-1][0], STDIN_FILENO);
+							close(fd[i-1][0]);
 							close(fd[i-1][1]);
 							if (i != 1){
 								close(fd[i-2][0]);
@@ -189,6 +289,7 @@ int main(int argc, char* argv[])
 						if(i != 1){
 							// Del resto, cambiamos su salida
 							dup2(fd[i-2][1], STDOUT_FILENO);
+							close(fd[i-2][1]);
 							close(fd[i-2][0]);
 							if (i != command_counter){
 								close(fd[i-1][0]);
