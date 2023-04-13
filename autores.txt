@@ -1,3 +1,2 @@
-NIA1, Apellidos1, Nombre1
-NIA2, Apellidos2, Nombre2
-NIA3, Apellidos3, Nombre3
+100471939, Penas Díaz, Alberto
+100471976, Rodríguez Navarro, Natalia

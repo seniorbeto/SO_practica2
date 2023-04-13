@@ -52,14 +52,14 @@ int mycalc(char *argvv[]){
 	// Realizamos la suma
 	if(strcmp(argvv[2], "add") == 0){
 		long long int valor;
-		// Usamos atof para poder realizar operaciones con más cifras
-		Resultado = atof(argvv[1]) + atof(argvv[3]);
+		// Usamos atoll para poder realizar operaciones con más cifras
+		Resultado = atoll(argvv[1]) + atoll(argvv[3]);
 		// Actualizamos el valor de Acc 
 		if (getenv("Acc") == NULL){
 			valor = 0;
 		}
 		else{
-			valor = atof(getenv("Acc"));
+			valor = atoll(getenv("Acc"));
 		}
 		valor += Resultado;
 
@@ -67,16 +67,11 @@ int mycalc(char *argvv[]){
 		int digitos = sizeof(valor)/sizeof(long long int);
 		char str_valor[sizeof(char)*digitos];
 		sprintf(str_valor,"%lld", valor);
+
 		// Creamos la variable de entorno Acc que guardará los resultados de las
 		// sumas
-		char *Acc = malloc(sizeof(str_valor) + 6);
-		strcpy(Acc, "Acc");
-		strcat(Acc, "=");
-		strcat(Acc, str_valor);
-
 		if(setenv("Acc", str_valor, 1) != 0){
 			printf("[ERROR] Fallo en la creación de la variable de entorno");
-			free(Acc);
 			return -1;
 		}
 
@@ -86,22 +81,22 @@ int mycalc(char *argvv[]){
 	
 	// Realizamos la multiplicación
 	else if(strcmp(argvv[2], "mul") == 0){
-		// Usamos atof para poder realizar operaciones con más cifras
-		Resultado = atof(argvv[1]) * atof(argvv[3]);
+		// Usamos atoll para poder realizar operaciones con más cifras
+		Resultado = atoll(argvv[1]) * atoll(argvv[3]);
 		// Mostramos resultado por la salida estándar de error
 		fprintf(stderr, "[OK] %s * %s = %lld\n", argvv[1], argvv[3], Resultado);
 	}
 
 	// Realizamos la división
 	else{
-		if(atof(argvv[3]) == 0){
+		if(atoll(argvv[3]) == 0){
 			printf("[ERROR] No se puede dividir por 0\n");
 			return -1;
 		}
 		long long int Resto;
 		long long int Cociente;
-		Cociente = atof(argvv[1]) / atof(argvv[3]);
-		Resto = atoi(argvv[1]) % atoi(argvv[3]);
+		Cociente = atoll(argvv[1]) / atoll(argvv[3]);
+		Resto = atoll(argvv[1]) % atoll(argvv[3]);
 		// Mostramos resultado por la salida estándar de error
 		fprintf(stderr, "[OK] %s / %s = %lld; Resto %lld\n", argvv[1], argvv[3], Cociente, Resto);
 	}
@@ -225,10 +220,10 @@ int main(int argc, char* argv[])
 		//************************************************************************************************
 		
 		/************************ STUDENTS CODE ********************************/
-		if (strcmp(argvv[0][0], "mycalc") == 0){
+		if (command_counter > 0 && strcmp(argvv[0][0], "mycalc") == 0){
 			mycalc(argvv[0]);
 		}
-		else if (strcmp(argvv[0][0], "mytime") == 0){
+		else if (command_counter > 0 && strcmp(argvv[0][0], "mytime") == 0){
 			mytimer();
 		}
 		else if (command_counter > 0) {
