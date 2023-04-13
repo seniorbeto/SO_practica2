@@ -33,7 +33,7 @@ char *argv_execvp[8];
 int mycalc(char *argvv[]){
 	// El mandato debe obtener exactamente 4 argumentos
 	if(argvv[1] == NULL || argvv[2] == NULL || argvv[3] == NULL || argvv[4] != NULL){
-		printf("[ERROR] La estructura del comando es mycalc <operando 1> <add/mul/div> <operando 2>\n");
+		printf("[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>\n");
 		return -1;
 	}
 	
@@ -44,7 +44,7 @@ int mycalc(char *argvv[]){
 		((strcmp(argvv[2], "add") != 0) && (strcmp(argvv[2], "mul") != 0) && (strcmp(argvv[2], "div") != 0))|| 
 		(atoi(argvv[3]) == 0 && strcmp(argvv[3], "0") != 0)){
 
-		printf("[ERROR] La estructura del comando es mycalc <operando 1> <add/mul/div> <operando 2>\n");
+		printf("[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>\n");
 		return -1;
 	}
 	
@@ -52,9 +52,8 @@ int mycalc(char *argvv[]){
 	// Realizamos la suma
 	if(strcmp(argvv[2], "add") == 0){
 		long long int valor;
-
+		// Usamos atof para poder realizar operaciones con más cifras
 		Resultado = atof(argvv[1]) + atof(argvv[3]);
-		printf("r: %lld\n", Resultado);
 		// Actualizamos el valor de Acc 
 		if (getenv("Acc") == NULL){
 			valor = 0;
@@ -75,7 +74,7 @@ int mycalc(char *argvv[]){
 		strcat(Acc, "=");
 		strcat(Acc, str_valor);
 
-		if(putenv(Acc) != 0){
+		if(setenv("Acc", str_valor, 1) != 0){
 			printf("[ERROR] Fallo en la creación de la variable de entorno");
 			free(Acc);
 			return -1;
@@ -87,6 +86,7 @@ int mycalc(char *argvv[]){
 	
 	// Realizamos la multiplicación
 	else if(strcmp(argvv[2], "mul") == 0){
+		// Usamos atof para poder realizar operaciones con más cifras
 		Resultado = atof(argvv[1]) * atof(argvv[3]);
 		// Mostramos resultado por la salida estándar de error
 		fprintf(stderr, "[OK] %s * %s = %lld\n", argvv[1], argvv[3], Resultado);
@@ -101,10 +101,12 @@ int mycalc(char *argvv[]){
 		long long int Resto;
 		long long int Cociente;
 		Cociente = atof(argvv[1]) / atof(argvv[3]);
-		Resto = atof(argvv[1]) - (atof(argvv[3]) * (atof(argvv[1]) / atof(argvv[3])));
+		Resto = atoi(argvv[1]) % atoi(argvv[3]);
 		// Mostramos resultado por la salida estándar de error
-		fprintf(stderr, "[OK] %s / %s = %lld Resto %lld\n", argvv[1], argvv[3], Cociente, Resto);
+		fprintf(stderr, "[OK] %s / %s = %lld; Resto %lld\n", argvv[1], argvv[3], Cociente, Resto);
 	}
+
+	return 0;
 }
 
 
@@ -118,7 +120,6 @@ void siginthandler(int param)
 /* Timer */
 pthread_t timer_thread;
 unsigned long  mytime = 0;
-
 void* timer_run ( )
 {
 	while (1)
@@ -128,6 +129,28 @@ void* timer_run ( )
 	}
 }
 
+// Mandato interno mytime: tiempo que lleva ejecutando la minishell en formato HH:MM:SS
+int mytimer(){
+	int horas;
+	int minutos;
+	int segundos;
+	segundos = mytime/1000;
+	if (segundos > 59){
+		minutos = segundos/60;
+		segundos -= (minutos*60);
+		if (minutos > 59){
+			horas = minutos/60;
+			minutos -= (horas*60);
+			fprintf(stderr, "%02d:%02d:%02d\n",horas, minutos, segundos);
+		}
+		else{
+			fprintf(stderr, "00:%02d:%02d\n",minutos, segundos);				
+		}
+	}
+	else{
+		fprintf(stderr, "00:00:%02d\n", segundos);	
+	}
+}
 /**
  * Get the command with its parameters for execvp
  * Execute this instruction before run an execvp to obtain the complete command
@@ -204,6 +227,9 @@ int main(int argc, char* argv[])
 		/************************ STUDENTS CODE ********************************/
 		if (strcmp(argvv[0][0], "mycalc") == 0){
 			mycalc(argvv[0]);
+		}
+		else if (strcmp(argvv[0][0], "mytime") == 0){
+			mytimer();
 		}
 		else if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
