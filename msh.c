@@ -29,24 +29,6 @@ char filev[3][64];
 //to store the execvp second parameter
 char *argv_execvp[8];
 
-double log(int b,double n) {
-    double val = 0;
-    int i,accurate = 10,reps=0;
-    while(n != 1 && accurate>=0) {
-        for(i=0;n>=b;i++) n /= b;
-            n = p(n,10);
-            val = 10*(val+i);
-            accurate--; reps++;
-    }
-    return (double)val/p(10,reps);
-}
-
-double p(double x,int i) {
-    double r = 1.0;
-    for(i;i>0;i--) r *= x;
-    return r;
-}
-
 // Mandato interno mycalc (add, mul, div):
 int mycalc(char *argvv[]){
 	// El mandato debe obtener exactamente 4 argumentos
@@ -66,30 +48,29 @@ int mycalc(char *argvv[]){
 		return -1;
 	}
 	
-	int Resto;
-	int Cociente;
-	int Resultado;
+	long long int Resultado;
 	// Realizamos la suma
 	if(strcmp(argvv[2], "add") == 0){
-		Resultado = atoi(argvv[1]) + atoi(argvv[3]);
-		// Creamos la variable de entorno Acc que guardará los resultados de las
-		// sumas
-		char *Acc;
-		double valor;
+		long long int valor;
+
+		Resultado = atof(argvv[1]) + atof(argvv[3]);
+		printf("r: %lld\n", Resultado);
+		// Actualizamos el valor de Acc 
 		if (getenv("Acc") == NULL){
 			valor = 0;
 		}
 		else{
-			valor = atoi(getenv("Acc"));
+			valor = atof(getenv("Acc"));
 		}
-		// Actualizamos el valor de Acc 
 		valor += Resultado;
-		// Lo pasamos a string
-		int digitos = (log10(valor) + 1);
-		char str_valor[sizeof(char)*digitos];
-		sprintf(str_valor,"%f", valor);
 
-		Acc = malloc(sizeof(str_valor) + 6);
+		// Lo pasamos a string
+		int digitos = sizeof(valor)/sizeof(long long int);
+		char str_valor[sizeof(char)*digitos];
+		sprintf(str_valor,"%lld", valor);
+		// Creamos la variable de entorno Acc que guardará los resultados de las
+		// sumas
+		char *Acc = malloc(sizeof(str_valor) + 6);
 		strcpy(Acc, "Acc");
 		strcat(Acc, "=");
 		strcat(Acc, str_valor);
@@ -99,28 +80,30 @@ int mycalc(char *argvv[]){
 			free(Acc);
 			return -1;
 		}
-		// Actualizamos el valor de Acc
+
 		// Mostramos resultado por la salida estándar de error
-		fprintf(stderr, "[OK] %s + %s = %d; Acc %d\n", argvv[1], argvv[3], Resultado, atoi(getenv("Acc")));
+		fprintf(stderr, "[OK] %s + %s = %lld; Acc %s\n", argvv[1], argvv[3], Resultado, getenv("Acc"));
 	}
 	
 	// Realizamos la multiplicación
 	else if(strcmp(argvv[2], "mul") == 0){
-		Resultado = atoi(argvv[1]) * atoi(argvv[3]);
+		Resultado = atof(argvv[1]) * atof(argvv[3]);
 		// Mostramos resultado por la salida estándar de error
-		fprintf(stderr, "[OK] %s * %s = %d\n", argvv[1], argvv[3], Resultado);
+		fprintf(stderr, "[OK] %s * %s = %lld\n", argvv[1], argvv[3], Resultado);
 	}
 
 	// Realizamos la división
 	else{
-		if(atoi(argvv[3]) == 0){
+		if(atof(argvv[3]) == 0){
 			printf("[ERROR] No se puede dividir por 0\n");
 			return -1;
 		}
-		Resto = atoi(argvv[1]) % atoi(argvv[3]);
-		Cociente = (atoi(argvv[1]) - Resto) / atoi(argvv[3]);
+		long long int Resto;
+		long long int Cociente;
+		Cociente = atof(argvv[1]) / atof(argvv[3]);
+		Resto = atof(argvv[1]) - (atof(argvv[3]) * (atof(argvv[1]) / atof(argvv[3])));
 		// Mostramos resultado por la salida estándar de error
-		fprintf(stderr, "[OK] %s / %s = %d Resto %d\n", argvv[1], argvv[3], Cociente, Resto);
+		fprintf(stderr, "[OK] %s / %s = %lld Resto %lld\n", argvv[1], argvv[3], Cociente, Resto);
 	}
 }
 
