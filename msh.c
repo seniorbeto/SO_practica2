@@ -276,25 +276,36 @@ int main(int argc, char* argv[])
 						
 						//printf("Se va a ejecutar: %s. El pid de su padre es: %d\n", argvv[command_counter-i][0], getppid());						
 						wait(NULL);
+						printf("Proceso %s con i:%d\n", argvv[command_counter-i][0], i);
 						// Si es el último proceso, es decir, el primer comando no cambiaremos
 						// su entrada
 						if (i != command_counter){
-							// Cerramos las lecturas que se quedan abiertas de los pipes anteriores
-							if (i != command_counter-1){
-								close(fd[i][0]);
+							if (i == 1 && strcmp(filev[1], "0") != 0){
+								int fd_out = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+								dup2(fd_out, STDOUT_FILENO);
+								close(fd_out);
 							}
-							// De los que no son el último, cambiamos su entrada
-							dup2(fd[i-1][0], STDIN_FILENO);
-							close(fd[i-1][1]);
+							else{
+								// Cerramos las lecturas que se quedan abiertas de los pipes anteriores
+								// De los que no son el último, cambiamos su entrada
+								dup2(fd[i-1][0], STDIN_FILENO);
+								close(fd[i-1][1]);
+							}
 						}
 						
-
 						// Si es el primer proceso, es decir, el último comando, no cambiaremos 
 						// su salida. 
 						if(i != 1){
-							// Del resto, cambiamos su salida
-							dup2(fd[i-2][1], STDOUT_FILENO);
-							close(fd[i-2][0]);
+							if (i == command_counter && strcmp(filev[0], "0") != 0){
+								int fd_in = open(filev[0], O_RDONLY);
+								dup2(fd_in, STDIN_FILENO);
+								close(fd_in);
+							}
+							else{
+								// Del resto, cambiamos su salida
+								dup2(fd[i-2][1], STDOUT_FILENO);
+								close(fd[i-2][0]);
+							}
 						}
 						
 						// Vamos de atrás a delante para que se ejecuten primero los primeros comandos
