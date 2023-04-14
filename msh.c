@@ -279,24 +279,63 @@ int main(int argc, char* argv[])
 						if (command_counter != 1){
 							// Si es el último proceso, es decir, el primer comando no cambiaremos
 							// su entrada
+
+							/*
 							if (i-1 != command_counter){
 								// De los que no son el último, cambiamos su entrada
-								dup2(fd[i-2][0], STDIN_FILENO);
 								close(fd[i-2][1]);
+								dup2(fd[i-2][0], STDIN_FILENO);
+								close(fd[i-2][0]);
 								printf("Proceso %s establece su entrada a %d\n", argvv[(command_counter+1)-i][0], fd[i-2][0]);
 							}
-							close(fd[i-2][0]);
+							//close(fd[i-2][0]);
 
 							// Si es el primer proceso, es decir, el último comando, no cambiaremos 
 							// su salida. 
 							if(i-1 != 1){
 								// Del resto, cambiamos su salida
-								dup2(fd[i-3][1], STDOUT_FILENO);
 								close(fd[i-3][0]);
+								dup2(fd[i-3][1], STDOUT_FILENO);
+								close(fd[i-3][1]);
 								printf("Proceso %s establece su salida a %d\n", argvv[(command_counter+1)-i][0], fd[i-3][1]);
 							}
+							*/
+							
+							// BORRAR A PARTIR DE AQUÍ -----------------
+							// Vamos a probar con ls -l | grep msh | wc -l
+							// command_counter = 3
+							// Al ls -l,  i = 4, el primer mandato solo le cambiamos su salida 
+							if (i == command_counter + 1){
+								printf("PRIMER proceso %s establece su salida a %d\n", argvv[(command_counter+1)-i][0], fd[i-command_counter-1][1]);
+								close(fd[i-command_counter - 1][0]);
+								dup2(fd[i-command_counter - 1][1], STDOUT_FILENO);
+								close(fd[i-command_counter - 1][1]);
 
-							// Vamos de atrás a delante para que se ejecuten primero los primeros comandos
+							}
+							// Al grep msh i = 3, el del  medio, le cambiamos la entrada y la salida 
+							else if (i != 2){
+								printf("Proceso %s establece su entrada a %d\n", argvv[(command_counter+1)-i][0], fd[i-command_counter][0]);
+								printf("Proceso %s establece su salida a %d\n", argvv[(command_counter+1)-i][0], fd[command_counter+1-i][1]);
+								//close(fd[i+1-command_counter][1]);
+								close(fd[command_counter+1-i][0]);
+
+								dup2(fd[i - command_counter][0], STDIN_FILENO);
+								close(fd[i - command_counter][0]);
+
+								dup2(fd[command_counter+1-i][1], STDOUT_FILENO);
+								close(fd[command_counter+1-i][1]);
+							}
+							else if (i == 2){
+								printf("ÚLTIMO proceso %s establece su entrada a %d\n", argvv[command_counter-i][0], fd[i-2][0]);
+								//close(fd[i-1][0]);
+								close(fd[i-2][1]);
+
+								dup2(fd[command_counter-i][0], STDIN_FILENO);
+								close(fd[command_counter-i][0]);
+							}
+							// BORRAR HASTA AQUÍ -----------------------
+
+							// Vamos de atrás hacia delante para que se ejecuten primero los primeros comandos
 							execvp(argvv[(command_counter+1)-i][0], argvv[(command_counter+1)-i]);
 							perror("Error en la ejecución del mandato");
 						}
