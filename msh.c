@@ -29,81 +29,9 @@ char filev[3][64];
 //to store the execvp second parameter
 char *argv_execvp[8];
 
-// Mandato interno mycalc (add, mul, div):
-int mycalc(char *argvv[]){
-	// El mandato debe obtener exactamente 4 argumentos
-	if(argvv[1] == NULL || argvv[2] == NULL || argvv[3] == NULL || argvv[4] != NULL){
-		printf("[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>\n");
-		return -1;
-	}
-	
-	// El mandato debe recibir el primer argumento como 'mycalc', los 
-	// operandos como numeros y el operador solo puede ser add, mul y div
-	if((strcmp(argvv[0], "mycalc") != 0) || 
-		(atoi(argvv[1]) == 0  && strcmp(argvv[1], "0") != 0)|| 
-		((strcmp(argvv[2], "add") != 0) && (strcmp(argvv[2], "mul") != 0) && (strcmp(argvv[2], "div") != 0))|| 
-		(atoi(argvv[3]) == 0 && strcmp(argvv[3], "0") != 0)){
-
-		printf("[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>\n");
-		return -1;
-	}
-	
-	long long int Resultado;
-	// Realizamos la suma
-	if(strcmp(argvv[2], "add") == 0){
-		long long int valor;
-		// Usamos atoll para poder realizar operaciones con más cifras
-		Resultado = atoll(argvv[1]) + atoll(argvv[3]);
-		// Actualizamos el valor de Acc 
-		if (getenv("Acc") == NULL){
-			valor = 0;
-		}
-		else{
-			valor = atoll(getenv("Acc"));
-		}
-		valor += Resultado;
-
-		// Lo pasamos a string
-		int digitos = sizeof(valor)/sizeof(long long int);
-		char str_valor[sizeof(char)*digitos];
-		sprintf(str_valor,"%lld", valor);
-
-		// Creamos la variable de entorno Acc que guardará los resultados de las
-		// sumas
-		if(setenv("Acc", str_valor, 1) != 0){
-			printf("[ERROR] Fallo en la creación de la variable de entorno");
-			return -1;
-		}
-
-		// Mostramos resultado por la salida estándar de error
-		fprintf(stderr, "[OK] %s + %s = %lld; Acc %s\n", argvv[1], argvv[3], Resultado, getenv("Acc"));
-	
-	}
-	
-	// Realizamos la multiplicación
-	else if(strcmp(argvv[2], "mul") == 0){
-		// Usamos atoll para poder realizar operaciones con más cifras
-		Resultado = atoll(argvv[1]) * atoll(argvv[3]);
-		// Mostramos resultado por la salida estándar de error
-		fprintf(stderr, "[OK] %s * %s = %lld\n", argvv[1], argvv[3], Resultado);
-	}
-
-	// Realizamos la división
-	else{
-		if(atoll(argvv[3]) == 0){
-			printf("[ERROR] No se puede dividir por 0\n");
-			return -1;
-		}
-		long long int Resto;
-		long long int Cociente;
-		Cociente = atoll(argvv[1]) / atoll(argvv[3]);
-		Resto = atoll(argvv[1]) % atoll(argvv[3]);
-		// Mostramos resultado por la salida estándar de error
-		fprintf(stderr, "[OK] %s / %s = %lld; Resto %lld\n", argvv[1], argvv[3], Cociente, Resto);
-	}
-
-	return 0;
-}
+// Prototipos
+int mycalc(char *argvv[]);
+int mytimer();
 
 
 void siginthandler(int param)
@@ -125,28 +53,6 @@ void* timer_run ( )
 	}
 }
 
-// Mandato interno mytime: tiempo que lleva ejecutando la minishell en formato HH:MM:SS
-int mytimer(){
-	int horas;
-	int minutos;
-	int segundos;
-	segundos = mytime/1000;
-	if (segundos > 59){
-		minutos = segundos/60;
-		segundos -= (minutos*60);
-		if (minutos > 59){
-			horas = minutos/60;
-			minutos -= (horas*60);
-			fprintf(stderr, "%02d:%02d:%02d\n",horas, minutos, segundos);
-		}
-		else{
-			fprintf(stderr, "00:%02d:%02d\n",minutos, segundos);				
-		}
-	}
-	else{
-		fprintf(stderr, "00:00:%02d\n", segundos);	
-	}
-}
 /**
  * Get the command with its parameters for execvp
  * Execute this instruction before run an execvp to obtain the complete command
@@ -223,6 +129,7 @@ int main(int argc, char* argv[])
 		/************************ STUDENTS CODE ********************************/
 		if (command_counter > MAX_COMMANDS){
 				printf("Error: Número máximo de comandos es %d \n", MAX_COMMANDS);
+				return(-1);
 		}
 		else if (command_counter > 0 && strcmp(argvv[0][0], "mycalc") == 0){
 			mycalc(argvv[0]);
@@ -231,11 +138,9 @@ int main(int argc, char* argv[])
 			mytimer();
 		}
 		else if (command_counter > 0) {
-			
-				// Print command
-				//print_command(argvv, filev, in_background);
 
-				// Ahora, creamos tantos procesos como la variable command_counter indique
+				// En este caso, creamos tantos procesos como la variable command_counter 
+				// indique
 				int pid;
 				int i = 0;
 				
@@ -243,16 +148,17 @@ int main(int argc, char* argv[])
 				pid = fork();
 				if (pid < 0){
 					perror("Error en la creación del proceso");
+					return(-1);
 				}
-				// Generamos las tuberías necesarias
+				
 				int fd[command_counter-1][2];
-		
+				// Estás en el hijo
 				while (i < command_counter && pid == 0){
-					// Estás en el hijo
 
 					// Generamos las tuberías necesarias
 					if(pipe(fd[i]) < 0){
 							perror("Error en la creación de las tuberías");
+							return(-1);
 						}
 				
 					i++;	
@@ -262,65 +168,187 @@ int main(int argc, char* argv[])
 						pid = fork();
 						if (pid < 0){
 							perror("Error en la creación del proceso");
+							return(-1);
 						}
-						
 					}
-					// El padre esperará a sus hijos 
+
+					// El padre y el último hijo ejecutarán los comandos en orden inverso
+					// (el último proceso es el primer comando y el primero el último)
 					if (pid > 0 || i == command_counter){
 						
 						// Si el proceso se ejecuta en Background, se imprime su pid
 						if (in_background == 1){
 							printf("%d\n", getpid());
 						}
-					
 						
-						//printf("Se va a ejecutar: %s. El pid de su padre es: %d\n", argvv[command_counter-i][0], getppid());						
+						// El padre esperará a sus hijos 
 						wait(NULL);
-						printf("Proceso %s con i:%d\n", argvv[command_counter-i][0], i);
+
 						// Si es el último proceso, es decir, el primer comando no cambiaremos
 						// su entrada
 						if (i != command_counter){
-							if (i == 1 && strcmp(filev[1], "0") != 0){
-								int fd_out = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
-								dup2(fd_out, STDOUT_FILENO);
-								close(fd_out);
-							}
-							else{
-								// Cerramos las lecturas que se quedan abiertas de los pipes anteriores
-								// De los que no son el último, cambiamos su entrada
-								dup2(fd[i-1][0], STDIN_FILENO);
-								close(fd[i-1][1]);
-							}
+							// De los que no son el último, cambiamos su entrada
+							dup2(fd[i-1][0], STDIN_FILENO);
+							close(fd[i-1][1]);	
 						}
-						
+						// Redirección de entrada (último proceso = primer mandato)
+						if (i == command_counter && strcmp(filev[0], "0") != 0){
+							int fd_in = open(filev[0], O_RDONLY);
+							if(fd_in < 0){
+								perror("Error en la apertura de la redirección de entrada");
+								return(-1);
+							}
+							dup2(fd_in, STDIN_FILENO);
+							close(fd_in);
+						}
+
 						// Si es el primer proceso, es decir, el último comando, no cambiaremos 
 						// su salida. 
 						if(i != 1){
-							if (i == command_counter && strcmp(filev[0], "0") != 0){
-								int fd_in = open(filev[0], O_RDONLY);
-								dup2(fd_in, STDIN_FILENO);
-								close(fd_in);
+							// Del resto, cambiamos su salida
+							dup2(fd[i-2][1], STDOUT_FILENO);
+							close(fd[i-2][0]);
+						}
+						// Redirección de salida (primer proceso = último mandato)
+						if (i == 1 && strcmp(filev[1], "0") != 0){
+							int fd_out = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+							if(fd_out < 0){
+								perror("Error en la apertura de la redirección de salida");
+								return(-1);
 							}
-							else{
-								// Del resto, cambiamos su salida
-								dup2(fd[i-2][1], STDOUT_FILENO);
-								close(fd[i-2][0]);
+							dup2(fd_out, STDOUT_FILENO);
+							close(fd_out);
+						}
+
+						// Redirección de errores (primer proceso = último mandato)
+						if (i == 1 && strcmp(filev[2], "0") != 0) {
+							int fd_err = open(filev[2], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+							if (fd_err < 0) {
+								perror("Error en la apertura de la redirección de errores");
+								return(-1);
 							}
+							dup2(fd_err, STDERR_FILENO);
+							close(fd_err);
 						}
 						
 						// Vamos de atrás a delante para que se ejecuten primero los primeros comandos
 						execvp(argvv[command_counter-i][0], argvv[command_counter-i]);
 						perror("Error en la ejecución del mandato");
-
-						// Finalmente, terminamos el proceso <-------------------------
-						return(status);
+						return(-1);
 					}
 					
 				}
-				// Ahora esperamos a que termine su hijo
+				// Esperamos a que terminen los procesos
 			    wait(NULL);
 			}
 	}
+	return 0;
+}
+
+
+// Mandato interno mycalc (add, mul, div):
+int mycalc(char *argvv[]){
+
+	// El mandato debe obtener exactamente 4 argumentos
+	if(argvv[1] == NULL || argvv[2] == NULL || argvv[3] == NULL || argvv[4] != NULL){
+		printf("[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>\n");
+		return -1;
+	}
 	
+	// El mandato debe recibir el primer argumento como 'mycalc', los 
+	// operandos como numeros y el operador solo puede ser add, mul y div
+	if((strcmp(argvv[0], "mycalc") != 0) || 
+		(atoi(argvv[1]) == 0  && strcmp(argvv[1], "0") != 0)|| 
+		((strcmp(argvv[2], "add") != 0) && (strcmp(argvv[2], "mul") != 0) && (strcmp(argvv[2], "div") != 0))|| 
+		(atoi(argvv[3]) == 0 && strcmp(argvv[3], "0") != 0)){
+
+		printf("[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>\n");
+		return -1;
+	}
+	
+	long long int Resultado;
+	// Realizamos la suma
+	if(strcmp(argvv[2], "add") == 0){
+		long long int valor;
+		// Usamos atoll para poder realizar operaciones con más cifras
+		Resultado = atoll(argvv[1]) + atoll(argvv[3]);
+		// Actualizamos el valor de Acc 
+		if (getenv("Acc") == NULL){
+			valor = 0;
+		}
+		else{
+			valor = atoll(getenv("Acc"));
+		}
+		valor += Resultado;
+
+		// Cada caracter ocupa 1B
+		int digitos = 0;
+		int n = valor;
+		while (n != 0){
+			digitos++;
+			n /= 10;
+		}
+		char str_valor[digitos];
+		// Lo pasamos a string
+		sprintf(str_valor,"%lld", valor);
+
+		// Creamos la variable de entorno Acc que guardará los resultados de las
+		// sumas
+		if(setenv("Acc", str_valor, 1) != 0){
+			printf("[ERROR] Fallo en la creación de la variable de entorno");
+			return -1;
+		}
+		
+		// Mostramos resultado por la salida estándar de error
+		fprintf(stderr, "[OK] %s + %s = %lld; Acc %s\n", argvv[1], argvv[3], Resultado, getenv("Acc"));
+	
+	}
+	// Realizamos la multiplicación
+	else if(strcmp(argvv[2], "mul") == 0){
+		// Usamos atoll para poder realizar operaciones con más cifras
+		Resultado = atoll(argvv[1]) * atoll(argvv[3]);
+		// Mostramos resultado por la salida estándar de error
+		fprintf(stderr, "[OK] %s * %s = %lld\n", argvv[1], argvv[3], Resultado);
+	}
+	// Realizamos la división
+	else{
+		if(atoll(argvv[3]) == 0){
+			printf("[ERROR] No se puede dividir por 0\n");
+			return -1;
+		}
+		long long int Resto;
+		long long int Cociente;
+		Cociente = atoll(argvv[1]) / atoll(argvv[3]);
+		Resto = atoll(argvv[1]) % atoll(argvv[3]);
+		// Mostramos resultado por la salida estándar de error
+		fprintf(stderr, "[OK] %s / %s = %lld; Resto %lld\n", argvv[1], argvv[3], Cociente, Resto);
+	}
+
+	return 0;
+}
+
+
+// Mandato interno mytime: tiempo que lleva ejecutando la minishell en formato HH:MM:SS
+int mytimer(){
+	int horas;
+	int minutos;
+	int segundos;
+	segundos = mytime/1000;
+	if (segundos > 59){
+		minutos = segundos/60;
+		segundos -= (minutos*60);
+		if (minutos > 59){
+			horas = minutos/60;
+			minutos -= (horas*60);
+			fprintf(stderr, "%02d:%02d:%02d\n",horas, minutos, segundos);
+		}
+		else{
+			fprintf(stderr, "00:%02d:%02d\n",minutos, segundos);				
+		}
+	}
+	else{
+		fprintf(stderr, "00:00:%02d\n", segundos);	
+	}
+
 	return 0;
 }
