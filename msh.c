@@ -161,7 +161,7 @@ int main(int argc, char* argv[])
 							return(-1);
 						}
 				
-					i++;	
+					i++;
 					
 					// Si quedan mandatos por ejecutar, creamos otro hijo
 					if (i != command_counter){
@@ -176,9 +176,10 @@ int main(int argc, char* argv[])
 					// (el último proceso es el primer comando y el primero el último)
 					if (pid > 0 || i == command_counter){
 						
-						// Si el proceso se ejecuta en Background, se imprime su pid
-						if (in_background == 1){
-							printf("%d\n", getpid());
+						// Si el proceso se ejecuta en Background, se imprime el pid del último
+						// mandato de la secuencia
+						if (in_background == 1 && i == 1){
+							printf("[%d]\n", getpid());
 						}
 						
 						// El padre esperará a sus hijos 
@@ -238,8 +239,11 @@ int main(int argc, char* argv[])
 					}
 					
 				}
-				// Esperamos a que terminen los procesos
-			    wait(NULL);
+				// Esperamos a que terminen los procesos.
+				// En caso de que sea en background la minishell no debe bloquearse
+				if (in_background == 0) {
+					wait(NULL);
+				}
 			}
 	}
 	return 0;
