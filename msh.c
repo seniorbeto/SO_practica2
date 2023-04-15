@@ -132,10 +132,21 @@ int main(int argc, char* argv[])
 				return(-1);
 		}
 		else if (command_counter > 0 && strcmp(argvv[0][0], "mycalc") == 0){
-			mycalc(argvv[0]);
+			if (in_background == 0){
+				mycalc(argvv[0]);
+			}
+			else{
+				printf("Error: mycalc no se puede ejecutar en background \n");
+			}
+			
 		}
 		else if (command_counter > 0 && strcmp(argvv[0][0], "mytime") == 0){
-			mytimer();
+			if (in_background == 0){
+				mytimer();
+			}
+			else{
+				printf("Error: mytime no se puede ejecutar en background \n");
+			}
 		}
 		else if (command_counter > 0) {
 
