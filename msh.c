@@ -132,20 +132,22 @@ int main(int argc, char* argv[])
 				return(-1);
 		}
 		else if (command_counter > 0 && strcmp(argvv[0][0], "mycalc") == 0){
-			if (in_background == 0){
+			if (in_background == 0 && command_counter == 1 ){
 				mycalc(argvv[0]);
 			}
 			else{
-				printf("Error: mycalc no se puede ejecutar en background \n");
+				printf("[ERROR]: mycalc no se puede ejecutar ni en modo background ni en una secuencia\n");
+				return(-1);
 			}
 			
 		}
 		else if (command_counter > 0 && strcmp(argvv[0][0], "mytime") == 0){
-			if (in_background == 0){
+			if (in_background == 0 && command_counter == 1){
 				mytimer();
 			}
 			else{
-				printf("Error: mytime no se puede ejecutar en background \n");
+				printf("[ERROR]: mytime no se puede ejecutar ni en modo background ni en una secuencia\n");
+				return(-1);
 			}
 		}
 		else if (command_counter > 0) {
@@ -287,13 +289,17 @@ int mycalc(char *argvv[]){
 		long long int valor;
 		// Usamos atoll para poder realizar operaciones con más cifras
 		Resultado = atoll(argvv[1]) + atoll(argvv[3]);
-		// Actualizamos el valor de Acc 
+
+		// Inicializamos la variable de entorno a 0
 		if (getenv("Acc") == NULL){
-			valor = 0;
+			if(setenv("Acc", "0", 1) != 0){
+				printf("[ERROR] Fallo en la creación de la variable de entorno");
+				return -1;
+			}
 		}
-		else{
-			valor = atoll(getenv("Acc"));
-		}
+		
+		// Actualizamos el valor de Acc
+		valor = atoll(getenv("Acc"));
 		valor += Resultado;
 
 		// Cada caracter ocupa 1B
