@@ -19,7 +19,6 @@
 #define MAX_COMMANDS 8
 
 int mycalc(char *argv[]);
-int myhistory();
 
 // files in case of redirection
 char filev[3][64];
@@ -34,9 +33,6 @@ void siginthandler(int param)
 	exit(0);
 }
 
-/* myhistory */
-
-/* myhistory */
 
 struct command
 {
@@ -203,8 +199,6 @@ int main(int argc, char* argv[])
         para que el comando myhistory pueda ejecutarse en el mismo bloque de código
         que el resto de comandos, ya que de lo contrario, se ejecutaría en un bloque
         diferente y no se podría re-ejecutar un comando del historial.
-            run_command = 0: Mostrar historial únicamente
-            run_command = 1: Ejecutar comando del historial
         */
         int run_history_command = 0;
 
@@ -236,7 +230,7 @@ int main(int argc, char* argv[])
 				printf("Error: mycalc no se puede ejecutar en background \n");
 			}
         }
-        if(command_counter == 1 && strcmp(argvv[0][0], "myhistory") == 0){ //TODO: cambiar esto por myhistory
+        if(command_counter == 1 && strcmp(argvv[0][0], "myhistory") == 0){
             /*
             A diferencia de mycalc, myhistory no puede ejecutarse en una función auxiliar,
             ya que es posible que se desee re-ejecutar un comando del historial, lo que hace 
@@ -322,11 +316,11 @@ int main(int argc, char* argv[])
                 }
 			}
 			else{
-				printf("Error: mycalc no se puede ejecutar en background \n");
+				printf("Error: myhistory no se puede ejecutar en background \n");
 			}
         }
         if((command_counter > 0 && strcmp(argvv[0][0], "mycalc") != 0 && strcmp(argvv[0][0], "myhistory") != 0) || run_history_command == 1){
-            // Llamada a store_command para almacenar el comando actual en el historial
+            // Almacenamos el comando actual en el historial
             store_command(argvv, filev, in_background, &history[tail]);
 
             // Actualizar el índice tail para apuntar al próximo espacio libre
@@ -394,7 +388,7 @@ int main(int argc, char* argv[])
 
                     // Ejecutar el comando
                     execvp(argvv[i][0], argvv[i]);
-                    // Si execvp retorna, hubo un error
+                    // Si execvp devuelve algún valor, hubo un error
                     perror("execvp");
                     exit(EXIT_FAILURE);
                 } else if (pid < 0) {
@@ -468,5 +462,3 @@ int mycalc(char *argv[]) {
 
     return 0;
 }
-
-// TODO: en la minishell, si pones únicamente wc, se queda pilluco. 
