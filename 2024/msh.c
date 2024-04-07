@@ -18,6 +18,8 @@
 
 #define MAX_COMMANDS 8
 
+int mycalc(char *argv[]);
+int myhistory();
 
 // files in case of redirection
 char filev[3][64];
@@ -50,7 +52,7 @@ struct command
   int in_background;
 };
 
-int history_size = 20;
+int history_size = 4; // TODO: cambiar a 20
 struct command * history;
 int head = 0;
 int tail = 0;
@@ -195,17 +197,152 @@ int main(int argc, char* argv[])
 
 
 		/************************ STUDENTS CODE ********************************/
+        /*
+        Primeramente, crearemos un flag que se encarga únicamente de distinguir
+        si se desea re-ejecutar un comando del historial o no. Esto es de utilidad
+        para que el comando myhistory pueda ejecutarse en el mismo bloque de código
+        que el resto de comandos, ya que de lo contrario, se ejecutaría en un bloque
+        diferente y no se podría re-ejecutar un comando del historial.
+            run_command = 0: Mostrar historial únicamente
+            run_command = 1: Ejecutar comando del historial
+        */
+        int run_history_command = 0;
+
         if (command_counter > MAX_COMMANDS){
             perror("Error: Max number of commands exceeded\n");
             exit(EXIT_FAILURE);
         }
-        else if (command_counter > 0 && strcmp(argvv[0][0], "mycalc") == 0){
-            printf("FALTA IMPLEMENTAR\n");
+        if (command_counter == 1 && strcmp(argvv[0][0], "mycalc") == 0){
+            if (in_background == 0){
+				mycalc(argvv[0]);
+                // Llamada a store_command para almacenar el comando actual en el historial
+                store_command(argvv, filev, in_background, &history[tail]);
+
+                // Actualizar el índice tail para apuntar al próximo espacio libre
+                tail = (tail + 1) % history_size;
+
+                // Ajustar el número de elementos y el índice head si es necesario
+                if
+                (n_elem < history_size) {
+                    n_elem++;
+                }
+                else {
+                    // Liberar la memoria del comando más antiguo
+                    free_command(&history[head]);
+                    head = (head + 1) % history_size; // El historial está lleno, avanzar head
+                }
+			}
+			else{
+				printf("Error: mycalc no se puede ejecutar en background \n");
+			}
         }
-        else if(command_counter > 0 && strcmp(argvv[0][0], "myhistory") == 0){
-            printf("FALTA IMPLEMENTAR\n");
+        if(command_counter == 1 && strcmp(argvv[0][0], "mh") == 0){ //TODO: cambiar esto por myhistory
+            /*
+            A diferencia de mycalc, myhistory no puede ejecutarse en una función auxiliar,
+            ya que es posible que se desee re-ejecutar un comando del historial, lo que hace 
+            necesario que se ejecute en el mismo bloque de código.
+            */
+            if (in_background == 0){
+				if (argvv[0][1] == NULL) {
+                    // Mostrar historial completo
+                    int current = head;
+                    for (int i = 0; i < n_elem; i++) {
+                        // Verificar y mostrar la redirección de entrada
+                        if (strcmp(history[current].filev[0], "0") != 0) {
+                            printf("< %s ", history[current].filev[0]);
+                        }
+                        printf("%d ", i);
+                        // Iterar sobre todos los comandos de la entrada actual del historial
+                        for (int j = 0; j <= history[current].num_commands; j++) {
+                            for (int k = 0; k < history[current].args[j]; k++) {
+                                // Imprimir cada argumento del comando
+                                printf("%s ", history[current].argvv[j][k]);
+                            }
+                            if (j < history[current].num_commands - 1) {
+                                printf("| "); // Separar comandos en la misma entrada con un pipe
+                            }
+                        }
+                        // Verificar y mostrar la redirección de salida
+                        if (strcmp(history[current].filev[1], "0") != 0) {
+                            printf("> %s ", history[current].filev[1]);
+                        }
+                        if (history[current].in_background) {
+                            printf("&"); // Indicar si el comando se ejecutó en background
+                        }
+                        printf("\n");
+                        current = (current + 1) % history_size;
+                    }
+                } 
+                
+                else {
+                    // Intentar ejecutar un comando específico del historial
+                    int index = atoi(argvv[0][1]);
+                    if (index < 0 || index >= n_elem) {
+                        printf("ERROR: Comando no encontrado\n");
+                    }
+
+                    else {
+                        /*Modificamos el flag*/
+                        run_history_command = 1;
+
+                        int actualIndex = (head + index) % history_size;
+                        printf("Ejecutando el comando %d\n", index);
+
+                        /*
+                        Modificaremos command_counter, filev, in_background y argvv 
+                        para que contengan los valores del comando almacenado en el historial
+                        y pasen así a ejecutarse en el siguiente bloque de código para que vuelva 
+                        a introducirse en el historial.
+                        */
+
+                        // Asignar valores del comando seleccionado para su re-ejecución
+                        command_counter = history[actualIndex].num_commands;
+                        in_background = history[actualIndex].in_background;
+                        // Asignar redirecciones de archivo
+                        for (int f = 0; f < 3; f++) {
+                            strcpy(filev[f], history[actualIndex].filev[f]);
+                        }
+
+                        // Asignar comandos y argumentos
+                        for (int i = 0; i <= history[actualIndex].num_commands; i++) {
+                            // Asignar número de argumentos para el comando actual
+                            int num_args = history[actualIndex].args[i];
+                            argvv[i] = (char **)calloc(num_args + 1, sizeof(char *));
+                            
+                            for (int j = 0; j < num_args; j++) {
+                                argvv[i][j] = strdup(history[actualIndex].argvv[i][j]);
+                            }
+                            // El último argumento debe ser NULL para indicar el fin de los argumentos
+                            argvv[i][num_args] = NULL;
+                        }
+
+                        // Asegúrate de que el siguiente comando en argvv sea NULL para indicar el fin de los comandos
+                        argvv[history[actualIndex].num_commands + 1] = NULL;
+                    }
+                }
+			}
+			else{
+				printf("Error: mycalc no se puede ejecutar en background \n");
+			}
         }
-        else if(command_counter > 0){
+        if((command_counter > 0 && strcmp(argvv[0][0], "mycalc") != 0 && strcmp(argvv[0][0], "mh") != 0) || run_history_command == 1){
+            // Llamada a store_command para almacenar el comando actual en el historial
+            store_command(argvv, filev, in_background, &history[tail]);
+
+            // Actualizar el índice tail para apuntar al próximo espacio libre
+            tail = (tail + 1) % history_size;
+
+            // Ajustar el número de elementos y el índice head si es necesario
+            if
+            (n_elem < history_size) {
+                n_elem++;
+            }
+            else {
+                // Liberar la memoria del comando más antiguo
+                free_command(&history[head]);
+                head = (head + 1) % history_size; // El historial está lleno, avanzar head
+            }
+
             int i;
             int pipefd[2 * (command_counter - 1)]; // Cada comando puede necesitar un pipe para conectarse al siguiente
 
@@ -282,3 +419,54 @@ int main(int argc, char* argv[])
 	
 	return 0;
 }
+
+int mycalc(char *argv[]) {
+    // Verificar que se pasaron los argumentos correctamente
+    if (argv[1] == NULL || argv[2] == NULL || argv[3] == NULL) {
+        printf("[ERROR] La estructura del comando es mycalc <operando 1> <add/mul/div> <operando 2>\n");
+        return -1;
+    }
+
+    int op1 = atoi(argv[1]);
+    int op2 = atoi(argv[3]);
+    int resultado;
+    char *operacion = argv[2];
+
+    // Obtener valor actual de Acc
+    char *acc_str = getenv("Acc");
+    int acc = (acc_str != NULL) ? atoi(acc_str) : 0;
+
+    if (strcmp(operacion, "add") == 0) {
+        resultado = op1 + op2;
+        acc += resultado;
+        // Actualizar el valor de Acc
+        char acc_buffer[20];
+        snprintf(acc_buffer, 20, "%d", acc);
+        setenv("Acc", acc_buffer, 1);
+        fprintf(stderr, "[OK] %d + %d = %d; Acc %d\n", op1, op2, resultado, acc);
+    }
+    
+    else if (strcmp(operacion, "mul") == 0) {
+        resultado = op1 * op2;
+        fprintf(stderr, "[OK] %d * %d = %d\n", op1, op2, resultado);
+    } 
+    
+    else if (strcmp(operacion, "div") == 0) {
+        if (op2 == 0) {
+            printf("[ERROR] División por cero.\n");
+            return -1;
+        }
+        int cociente = op1 / op2;
+        int resto = op1 % op2;
+        fprintf(stderr, "[OK] %d / %d = %d; Resto %d\n", op1, op2, cociente, resto);
+    }
+
+    else {
+        printf("[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+// TODO: en la minishell, si pones únicamente wc, se queda pilluco. 
