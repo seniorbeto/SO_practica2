@@ -1,0 +1,13 @@
+autores.txt
+Enunciado
+hola.txt
+libparser.so
+Makefile
+msh
+msh.c
+msh.o
+output
+probador_ssoo_p2.sh
+pruebas.txt
+prueba.zip
+README.md
