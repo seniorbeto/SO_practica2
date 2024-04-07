@@ -195,54 +195,88 @@ int main(int argc, char* argv[])
 
 
 		/************************ STUDENTS CODE ********************************/
-	    int i;
-        int pipefd[2 * (command_counter - 1)]; // Cada comando puede necesitar un pipe para conectarse al siguiente
+        if (command_counter > MAX_COMMANDS){
+            perror("Error: Max number of commands exceeded\n");
+            exit(EXIT_FAILURE);
+        }
+        else if (command_counter > 0 && strcmp(argvv[0][0], "mycalc") == 0){
+            printf("FALTA IMPLEMENTAR\n");
+        }
+        else if(command_counter > 0 && strcmp(argvv[0][0], "myhistory") == 0){
+            printf("FALTA IMPLEMENTAR\n");
+        }
+        else if(command_counter > 0){
+            int i;
+            int pipefd[2 * (command_counter - 1)]; // Cada comando puede necesitar un pipe para conectarse al siguiente
 
-        // Crear todos los pipes necesarios de antemano
-        for (i = 0; i < command_counter - 1; i++) {
-            if (pipe(pipefd + i*2) < 0) {
-                perror("pipe");
-                exit(EXIT_FAILURE);
+            // Crear todos los pipes necesarios de antemano
+            for (i = 0; i < command_counter - 1; i++) {
+                if (pipe(pipefd + i*2) < 0) {
+                    perror("pipe");
+                    exit(EXIT_FAILURE);
+                }
             }
-        }
 
-        for (i = 0; i < command_counter; i++) {
-            pid_t pid = fork();
-            if (pid == 0) { // Proceso hijo
-                // Si no es el primer comando, conectar la entrada estándar al pipe anterior
-                if (i > 0) {
-                    dup2(pipefd[(i - 1) * 2], STDIN_FILENO);
+            for (i = 0; i < command_counter; i++) {
+                pid_t pid = fork();
+                if (pid == 0) { // Proceso hijo
+                    // Si no es el primer comando, conectar la entrada estándar al pipe anterior
+                    if (i > 0) {
+                        dup2(pipefd[(i - 1) * 2], STDIN_FILENO);
+                    }
+
+                    // Si no es el último comando, conectar la salida estándar al siguiente pipe
+                    if (i < command_counter - 1) {
+                        dup2(pipefd[i * 2 + 1], STDOUT_FILENO);
+                    }
+
+                    // Cerrar todos los descriptores de archivo de pipes, ya no son necesarios
+                    for (int j = 0; j < 2 * (command_counter - 1); j++) {
+                        close(pipefd[j]);
+                    }
+
+                    if (i == command_counter - 1 && strcmp(filev[1], "0") != 0) {
+                        int fd_out = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                        if (fd_out == -1) {
+                            perror("Error opening output file");
+                            exit(EXIT_FAILURE);
+                        }
+                        dup2(fd_out, STDOUT_FILENO);
+                        close(fd_out);
+                    }
+
+                    if (i == 0 && strcmp(filev[0], "0") != 0) {
+                        int fd_in = open(filev[0], O_RDONLY);
+                        if (fd_in == -1) {
+                            perror("Error opening input file");
+                            exit(EXIT_FAILURE);
+                        }
+                        dup2(fd_in, STDIN_FILENO);
+                        close(fd_in);
+                    }
+
+                    // Ejecutar el comando
+                    execvp(argvv[i][0], argvv[i]);
+                    // Si execvp retorna, hubo un error
+                    perror("execvp");
+                    exit(EXIT_FAILURE);
+                } else if (pid < 0) {
+                    perror("fork");
+                    exit(EXIT_FAILURE);
                 }
-
-                // Si no es el último comando, conectar la salida estándar al siguiente pipe
-                if (i < command_counter - 1) {
-                    dup2(pipefd[i * 2 + 1], STDOUT_FILENO);
-                }
-
-                // Cerrar todos los descriptores de archivo de pipes, ya no son necesarios
-                for (int j = 0; j < 2 * (command_counter - 1); j++) {
-                    close(pipefd[j]);
-                }
-
-                // Ejecutar el comando
-                execvp(argvv[i][0], argvv[i]);
-                // Si execvp retorna, hubo un error
-                perror("execvp");
-                exit(EXIT_FAILURE);
-            } else if (pid < 0) {
-                perror("fork");
-                exit(EXIT_FAILURE);
             }
-        }
 
-        // El proceso padre cierra todos los descriptores de archivo de pipes, ya no son necesarios
-        for (i = 0; i < 2 * (command_counter - 1); i++) {
-            close(pipefd[i]);
-        }
+            if (!in_background) {
+                // El proceso padre cierra todos los descriptores de archivo de pipes, ya no son necesarios
+                for (i = 0; i < 2 * (command_counter - 1); i++) {
+                    close(pipefd[i]);
+                }
 
-        // Esperar a que todos los procesos hijos terminen
-        for (i = 0; i < command_counter; i++) {
-            wait(NULL);
+                // Esperar a que todos los procesos hijos terminen
+                for (i = 0; i < command_counter; i++) {
+                    wait(NULL);
+                }
+            }
         }
 	}
 	
