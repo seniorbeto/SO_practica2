@@ -52,7 +52,7 @@ struct command
   int in_background;
 };
 
-int history_size = 4; // TODO: cambiar a 20
+int history_size = 20;
 struct command * history;
 int head = 0;
 int tail = 0;
@@ -236,7 +236,7 @@ int main(int argc, char* argv[])
 				printf("Error: mycalc no se puede ejecutar en background \n");
 			}
         }
-        if(command_counter == 1 && strcmp(argvv[0][0], "mh") == 0){ //TODO: cambiar esto por myhistory
+        if(command_counter == 1 && strcmp(argvv[0][0], "myhistory") == 0){ //TODO: cambiar esto por myhistory
             /*
             A diferencia de mycalc, myhistory no puede ejecutarse en una función auxiliar,
             ya que es posible que se desee re-ejecutar un comando del historial, lo que hace 
@@ -249,27 +249,27 @@ int main(int argc, char* argv[])
                     for (int i = 0; i < n_elem; i++) {
                         // Verificar y mostrar la redirección de entrada
                         if (strcmp(history[current].filev[0], "0") != 0) {
-                            printf("< %s ", history[current].filev[0]);
+                            fprintf(stderr, "< %s ", history[current].filev[0]);
                         }
-                        printf("%d ", i);
+                        fprintf(stderr, "%d ", i);
                         // Iterar sobre todos los comandos de la entrada actual del historial
                         for (int j = 0; j <= history[current].num_commands; j++) {
                             for (int k = 0; k < history[current].args[j]; k++) {
                                 // Imprimir cada argumento del comando
-                                printf("%s ", history[current].argvv[j][k]);
+                                fprintf(stderr, "%s ", history[current].argvv[j][k]);
                             }
                             if (j < history[current].num_commands - 1) {
-                                printf("| "); // Separar comandos en la misma entrada con un pipe
+                                fprintf(stderr, "| "); // Separar comandos en la misma entrada con un pipe
                             }
                         }
                         // Verificar y mostrar la redirección de salida
                         if (strcmp(history[current].filev[1], "0") != 0) {
-                            printf("> %s ", history[current].filev[1]);
+                            fprintf(stderr, "> %s ", history[current].filev[1]);
                         }
                         if (history[current].in_background) {
-                            printf("&"); // Indicar si el comando se ejecutó en background
+                            fprintf(stderr, "&"); // Indicar si el comando se ejecutó en background
                         }
-                        printf("\n");
+                        fprintf(stderr, "\n");
                         current = (current + 1) % history_size;
                     }
                 } 
@@ -286,7 +286,7 @@ int main(int argc, char* argv[])
                         run_history_command = 1;
 
                         int actualIndex = (head + index) % history_size;
-                        printf("Ejecutando el comando %d\n", index);
+                        fprintf(stderr, "Ejecutando el comando %d\n", index);
 
                         /*
                         Modificaremos command_counter, filev, in_background y argvv 
@@ -325,7 +325,7 @@ int main(int argc, char* argv[])
 				printf("Error: mycalc no se puede ejecutar en background \n");
 			}
         }
-        if((command_counter > 0 && strcmp(argvv[0][0], "mycalc") != 0 && strcmp(argvv[0][0], "mh") != 0) || run_history_command == 1){
+        if((command_counter > 0 && strcmp(argvv[0][0], "mycalc") != 0 && strcmp(argvv[0][0], "myhistory") != 0) || run_history_command == 1){
             // Llamada a store_command para almacenar el comando actual en el historial
             store_command(argvv, filev, in_background, &history[tail]);
 
