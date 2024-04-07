@@ -195,15 +195,55 @@ int main(int argc, char* argv[])
 
 
 		/************************ STUDENTS CODE ********************************/
-	   if (command_counter > 0) {
-			if (command_counter > MAX_COMMANDS){
-				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
-			}
-			else {
-				// Print command
-				print_command(argvv, filev, in_background);
-			}
-		}
+	    int i;
+        int pipefd[2 * (command_counter - 1)]; // Cada comando puede necesitar un pipe para conectarse al siguiente
+
+        // Crear todos los pipes necesarios de antemano
+        for (i = 0; i < command_counter - 1; i++) {
+            if (pipe(pipefd + i*2) < 0) {
+                perror("pipe");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        for (i = 0; i < command_counter; i++) {
+            pid_t pid = fork();
+            if (pid == 0) { // Proceso hijo
+                // Si no es el primer comando, conectar la entrada estándar al pipe anterior
+                if (i > 0) {
+                    dup2(pipefd[(i - 1) * 2], STDIN_FILENO);
+                }
+
+                // Si no es el último comando, conectar la salida estándar al siguiente pipe
+                if (i < command_counter - 1) {
+                    dup2(pipefd[i * 2 + 1], STDOUT_FILENO);
+                }
+
+                // Cerrar todos los descriptores de archivo de pipes, ya no son necesarios
+                for (int j = 0; j < 2 * (command_counter - 1); j++) {
+                    close(pipefd[j]);
+                }
+
+                // Ejecutar el comando
+                execvp(argvv[i][0], argvv[i]);
+                // Si execvp retorna, hubo un error
+                perror("execvp");
+                exit(EXIT_FAILURE);
+            } else if (pid < 0) {
+                perror("fork");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        // El proceso padre cierra todos los descriptores de archivo de pipes, ya no son necesarios
+        for (i = 0; i < 2 * (command_counter - 1); i++) {
+            close(pipefd[i]);
+        }
+
+        // Esperar a que todos los procesos hijos terminen
+        for (i = 0; i < command_counter; i++) {
+            wait(NULL);
+        }
 	}
 	
 	return 0;
