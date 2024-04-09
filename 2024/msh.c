@@ -413,7 +413,7 @@ int main(int argc, char* argv[])
                 while(wait(&status) != pid);
 
                 if (status != 0) {
-                    fprintf(stderr, "Error: El comando no se ejecutó correctamente\n");
+                    perror("Error: El comando no se ejecutó correctamente\n");
                 }
             }
         }
