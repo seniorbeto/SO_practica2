@@ -368,6 +368,7 @@ int main(int argc, char* argv[])
                         close(pipefd[j]);
                     }
 
+                    // Redirección de salida
                     if (i == command_counter - 1 && strcmp(filev[1], "0") != 0) {
                         int fd_out = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
                         if (fd_out == -1) {
@@ -378,6 +379,7 @@ int main(int argc, char* argv[])
                         close(fd_out);
                     }
 
+                    // Redirección de entrada
                     if (i == 0 && strcmp(filev[0], "0") != 0) {
                         int fd_in = open(filev[0], O_RDONLY);
                         if (fd_in == -1) {
@@ -386,6 +388,17 @@ int main(int argc, char* argv[])
                         }
                         dup2(fd_in, STDIN_FILENO);
                         close(fd_in);
+                    }
+
+                    // Redirección de errores
+                    if (i == 0 && strcmp(filev[2], "0") != 0) {
+                        int fd_err = open(filev[2], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                        if (fd_err == -1) {
+                            perror("Error opening error file");
+                            exit(EXIT_FAILURE);
+                        }
+                        dup2(fd_err, STDERR_FILENO);
+                        close(fd_err);
                     }
 
                     // Ejecutar el comando
