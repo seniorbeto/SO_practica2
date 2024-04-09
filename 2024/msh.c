@@ -348,8 +348,10 @@ int main(int argc, char* argv[])
                 }
             }
 
+            pid_t pid;
+
             for (i = 0; i < command_counter; i++) {
-                pid_t pid = fork();
+                pid = fork();
                 if (pid == 0) { // Proceso hijo
                     // Si no es el primer comando, conectar la entrada estándar al pipe anterior
                     if (i > 0) {
@@ -398,14 +400,20 @@ int main(int argc, char* argv[])
             }
 
             if (!in_background) {
-                // El proceso padre cierra todos los descriptores de archivo de pipes, ya no son necesarios
+                /*
+                El proceso padre cierra todos los descriptores de archivo de pipes, ya no son necesarios
+                */
                 for (i = 0; i < 2 * (command_counter - 1); i++) {
                     close(pipefd[i]);
                 }
 
-                // Esperar a que todos los procesos hijos terminen
-                for (i = 0; i < command_counter; i++) {
-                    wait(NULL);
+                /*
+                Utilizamos un while para eliminar procesos zombies de ejecuciones anteriores.
+                */
+                while(wait(&status) != pid);
+
+                if (status != 0) {
+                    fprintf(stderr, "Error: El comando no se ejecutó correctamente\n");
                 }
             }
         }

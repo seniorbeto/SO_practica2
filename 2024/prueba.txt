@@ -1,1 +1,13 @@
-pinga
+autores.txt
+creator.sh
+enunciado
+libparser.so
+Makefile
+msh
+msh.c
+msh.o
+nota.txt
+probador_ssoo_p2.sh
+prueba.txt
+temporal.zip
+wc
