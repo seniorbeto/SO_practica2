@@ -206,37 +206,13 @@ int main(int argc, char* argv[])
             perror("Error: Max number of commands exceeded\n");
             exit(EXIT_FAILURE);
         }
-        if (command_counter == 1 && strcmp(argvv[0][0], "mycalc") == 0){
-            if (in_background == 0){
-				mycalc(argvv[0]);
-                // Llamada a store_command para almacenar el comando actual en el historial
-                store_command(argvv, filev, in_background, &history[tail]);
-
-                // Actualizar el índice tail para apuntar al próximo espacio libre
-                tail = (tail + 1) % history_size;
-
-                // Ajustar el número de elementos y el índice head si es necesario
-                if
-                (n_elem < history_size) {
-                    n_elem++;
-                }
-                else {
-                    // Liberar la memoria del comando más antiguo
-                    free_command(&history[head]);
-                    head = (head + 1) % history_size; // El historial está lleno, avanzar head
-                }
-			}
-			else{
-				printf("Error: mycalc no se puede ejecutar en background \n");
-			}
-        }
-        if(command_counter == 1 && strcmp(argvv[0][0], "myhistory") == 0){
+        if(strcmp(argvv[0][0], "myhistory") == 0){
             /*
             A diferencia de mycalc, myhistory no puede ejecutarse en una función auxiliar,
             ya que es posible que se desee re-ejecutar un comando del historial, lo que hace 
             necesario que se ejecute en el mismo bloque de código.
             */
-            if (in_background == 0){
+            if (!in_background){
 				if (argvv[0][1] == NULL) {
                     // Mostrar historial completo
                     int current = head;
@@ -310,7 +286,6 @@ int main(int argc, char* argv[])
                             argvv[i][num_args] = NULL;
                         }
 
-                        // Asegúrate de que el siguiente comando en argvv sea NULL para indicar el fin de los comandos
                         argvv[history[actualIndex].num_commands + 1] = NULL;
                     }
                 }
@@ -319,7 +294,32 @@ int main(int argc, char* argv[])
 				printf("Error: myhistory no se puede ejecutar en background \n");
 			}
         }
-        if((command_counter > 0 && strcmp(argvv[0][0], "mycalc") != 0 && strcmp(argvv[0][0], "myhistory") != 0) || run_history_command == 1){
+        if (strcmp(argvv[0][0], "mycalc") == 0){
+            if (!in_background){
+				mycalc(argvv[0]);
+                // Llamada a store_command para almacenar el comando actual en el historial
+                store_command(argvv, filev, in_background, &history[tail]);
+
+                // Actualizar el índice tail para apuntar al próximo espacio libre
+                tail = (tail + 1) % history_size;
+
+                // Ajustar el número de elementos y el índice head si es necesario
+                if
+                (n_elem < history_size) {
+                    n_elem++;
+                }
+                else {
+                    // Liberar la memoria del comando más antiguo
+                    free_command(&history[head]);
+                    head = (head + 1) % history_size; // El historial está lleno, avanzar head
+                }
+			}
+			else{
+				printf("Error: mycalc no se puede ejecutar en background \n");
+			}
+        }
+        if((command_counter > 0 && strcmp(argvv[0][0], "mycalc") != 0 && strcmp(argvv[0][0], "myhistory") != 0) || 
+            (run_history_command == 1 && strcmp(argvv[0][0], "mycalc"))){
             // Almacenamos el comando actual en el historial
             store_command(argvv, filev, in_background, &history[tail]);
 
@@ -338,7 +338,7 @@ int main(int argc, char* argv[])
             }
 
             int i;
-            int pipefd[2 * (command_counter - 1)]; // Cada comando puede necesitar un pipe para conectarse al siguiente
+            int pipefd[2 * (command_counter - 1)];
 
             // Crear todos los pipes necesarios de antemano
             for (i = 0; i < command_counter - 1; i++) {
