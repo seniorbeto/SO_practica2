@@ -216,7 +216,7 @@ int main(int argc, char* argv[])
             continue;
         }
         if(strcmp(argvv[0][0], "myhistory") == 0){
-            /*
+            /*EXIT_FAILURE
             A diferencia de mycalc, myhistory no puede ejecutarse en una función auxiliar,
             ya que es posible que se desee re-ejecutar un comando del historial, lo que hace 
             necesario que se ejecute en el mismo bloque de código.
@@ -347,6 +347,10 @@ int main(int argc, char* argv[])
             }
 
             int i;
+            /*
+            Crearemos un array de pipes que contiene todos los descriptores de archivo.
+            Se genera un pipe por cada par de comandos.
+            */
             int pipefd[2 * (command_counter - 1)];
 
             // Crear todos los pipes necesarios de antemano
@@ -367,17 +371,17 @@ int main(int argc, char* argv[])
                         printf("[%d]\n", getpid());
                     }
 
-                    // Si no es el primer comando, conectar la entrada estándar al pipe anterior
+                    // Si no es el primer comando, conectaremos la entrada estándar al pipe anterior
                     if (i > 0) {
                         dup2(pipefd[(i - 1) * 2], STDIN_FILENO);
                     }
 
-                    // Si no es el último comando, conectar la salida estándar al siguiente pipe
+                    // Si no es el último comando, conectaremos la salida estándar al siguiente pipe
                     if (i < command_counter - 1) {
                         dup2(pipefd[i * 2 + 1], STDOUT_FILENO);
                     }
 
-                    // Cerrar todos los descriptores de archivo de pipes, ya no son necesarios
+                    // Cerrar todos los descriptores de archivo de pipes
                     for (int j = 0; j < 2 * (command_counter - 1); j++) {
                         close(pipefd[j]);
                     }
@@ -420,6 +424,7 @@ int main(int argc, char* argv[])
                     // Si execvp devuelve algún valor, hubo un error
                     perror("execvp");
                     exit(EXIT_FAILURE);
+                    
                 } else if (pid < 0) {
                     perror("fork");
                     exit(EXIT_FAILURE);
@@ -428,14 +433,15 @@ int main(int argc, char* argv[])
 
             if (!in_background) {
                 /*
-                El proceso padre cierra todos los descriptores de archivo de pipes, ya no son necesarios
+                El proceso padre cierra todos los descriptores de archivo de pipes.
                 */
                 for (i = 0; i < 2 * (command_counter - 1); i++) {
                     close(pipefd[i]);
                 }
 
                 /*
-                Utilizamos un while para eliminar procesos zombies de ejecuciones anteriores.
+                Utilizamos un while para eliminar procesos zombies de ejecuciones background anteriores
+                además de las ejecuciones en foreground actuales.
                 */
                 while(wait(&status) != pid);
 
