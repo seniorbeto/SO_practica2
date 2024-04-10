@@ -5,9 +5,12 @@ libparser.so
 Makefile
 msh
 msh.c
+mshh.c
+mshh.o
 msh.o
 nota.txt
 probador_ssoo_p2.sh
 prueba.txt
+ssoo_p2_100471939_100471976.zip
 temporal.zip
 wc

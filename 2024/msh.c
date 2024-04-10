@@ -233,7 +233,7 @@ int main(int argc, char* argv[])
                     for (int i = 0; i < n_elem; i++) {
                         fprintf(stderr, "%d ", i);
                         // Iterar sobre todos los comandos de la entrada actual del historial
-                        for (int j = 0; j <= history[current].num_commands; j++) {
+                        for (int j = 0; j < history[current].num_commands; j++) {
                             for (int k = 0; k < history[current].args[j]; k++) {
                                 // Imprimir cada argumento del comando
                                 fprintf(stderr, "%s ", history[current].argvv[j][k]);
@@ -474,6 +474,15 @@ int mycalc(char *argv[]) {
         return -1;
     }
 
+    if((strcmp(argv[0], "mycalc") != 0) || 
+		(atoi(argv[1]) == 0  && strcmp(argv[1], "0") != 0)|| 
+		((strcmp(argv[2], "add") != 0) && (strcmp(argv[2], "mul") != 0) && (strcmp(argv[2], "div") != 0))|| 
+		(atoi(argv[3]) == 0 && strcmp(argv[3], "0") != 0)){
+
+		printf("[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>\n");
+		return -1;
+	}
+
     int op1 = atoi(argv[1]);
     int op2 = atoi(argv[3]);
     int resultado;
@@ -506,11 +515,6 @@ int mycalc(char *argv[]) {
         int cociente = op1 / op2;
         int resto = op1 % op2;
         fprintf(stderr, "[OK] %d / %d = %d; Resto %d\n", op1, op2, cociente, resto);
-    }
-
-    else {
-        printf("[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>\n");
-        return -1;
     }
 
     return 0;
