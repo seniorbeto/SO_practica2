@@ -216,20 +216,21 @@ int main(int argc, char* argv[])
             continue;
         }
         if(strcmp(argvv[0][0], "myhistory") == 0){
-            /*EXIT_FAILURE
+            /*
             A diferencia de mycalc, myhistory no puede ejecutarse en una función auxiliar,
             ya que es posible que se desee re-ejecutar un comando del historial, lo que hace 
             necesario que se ejecute en el mismo bloque de código.
             */
             if (!in_background){
+                // Comprobamos si el número de argumentos es correcto (un número entero positivo o ninguno)
+                if (argvv[0][1] != NULL && (argvv[0][2] != NULL || isdigit(*argvv[0][1]) == 0)) {
+                    perror("Error: myhistory solo acepta un argumento entero o ninguno\n");
+                    continue;
+                }
 				if (argvv[0][1] == NULL) {
                     // Mostrar historial completo
                     int current = head;
                     for (int i = 0; i < n_elem; i++) {
-                        // Verificar y mostrar la redirección de entrada
-                        if (strcmp(history[current].filev[0], "0") != 0) {
-                            fprintf(stderr, "< %s ", history[current].filev[0]);
-                        }
                         fprintf(stderr, "%d ", i);
                         // Iterar sobre todos los comandos de la entrada actual del historial
                         for (int j = 0; j <= history[current].num_commands; j++) {
@@ -241,9 +242,17 @@ int main(int argc, char* argv[])
                                 fprintf(stderr, "| "); // Separar comandos en la misma entrada con un pipe
                             }
                         }
+                        // Verificar y mostrar la redirección de entrada
+                        if (strcmp(history[current].filev[0], "0") != 0) {
+                            fprintf(stderr, "< %s ", history[current].filev[0]);
+                        }
                         // Verificar y mostrar la redirección de salida
                         if (strcmp(history[current].filev[1], "0") != 0) {
                             fprintf(stderr, "> %s ", history[current].filev[1]);
+                        }
+                        // Verificar y mostrar la redirección de errores
+                        if (strcmp(history[current].filev[2], "0") != 0) {
+                            fprintf(stderr, "2> %s ", history[current].filev[2]);
                         }
                         if (history[current].in_background) {
                             fprintf(stderr, "&"); // Indicar si el comando se ejecutó en background
@@ -256,6 +265,7 @@ int main(int argc, char* argv[])
                 else {
                     // Intentar ejecutar un comando específico del historial
                     int index = atoi(argvv[0][1]);
+                    
                     if (index < 0 || index >= n_elem) {
                         printf("ERROR: Comando no encontrado\n");
                     }
@@ -301,6 +311,7 @@ int main(int argc, char* argv[])
 			}
 			else{
 				perror("Error: myhistory no se puede ejecutar en background \n");
+                continue;
 			}
         }
         if (strcmp(argvv[0][0], "mycalc") == 0){
@@ -325,6 +336,7 @@ int main(int argc, char* argv[])
 			}
 			else{
 				perror("Error: mycalc no se puede ejecutar en background \n");
+                continue;
 			}
         }
         if((command_counter > 0 && strcmp(argvv[0][0], "mycalc") != 0 && strcmp(argvv[0][0], "myhistory") != 0) || 
@@ -424,7 +436,7 @@ int main(int argc, char* argv[])
                     // Si execvp devuelve algún valor, hubo un error
                     perror("execvp");
                     exit(EXIT_FAILURE);
-                    
+
                 } else if (pid < 0) {
                     perror("fork");
                     exit(EXIT_FAILURE);
