@@ -206,6 +206,15 @@ int main(int argc, char* argv[])
             perror("Error: Max number of commands exceeded\n");
             exit(EXIT_FAILURE);
         }
+        if(command_counter == 0){
+            /*
+            Esta comprobación es necesaria, ya que si en caso de que el usuario 
+            únicamente introduzca un espacio en blanco, una tabulación o un intro en la minishell,
+            esta ha de seguir ejecutándose sin problema. De lo contrario, trataríamos de acceder
+            a una región de memoria a la que no tenemos acceso (argvv[0][0]).
+            */
+            continue;
+        }
         if(strcmp(argvv[0][0], "myhistory") == 0){
             /*
             A diferencia de mycalc, myhistory no puede ejecutarse en una función auxiliar,
@@ -291,7 +300,7 @@ int main(int argc, char* argv[])
                 }
 			}
 			else{
-				printf("Error: myhistory no se puede ejecutar en background \n");
+				perror("Error: myhistory no se puede ejecutar en background \n");
 			}
         }
         if (strcmp(argvv[0][0], "mycalc") == 0){
@@ -315,7 +324,7 @@ int main(int argc, char* argv[])
                 }
 			}
 			else{
-				printf("Error: mycalc no se puede ejecutar en background \n");
+				perror("Error: mycalc no se puede ejecutar en background \n");
 			}
         }
         if((command_counter > 0 && strcmp(argvv[0][0], "mycalc") != 0 && strcmp(argvv[0][0], "myhistory") != 0) || 
@@ -353,6 +362,11 @@ int main(int argc, char* argv[])
             for (i = 0; i < command_counter; i++) {
                 pid = fork();
                 if (pid == 0) { // Proceso hijo
+                    // Si se está ejecutando en background, imprimiremos el pid del último proceso
+                    if(in_background && i == command_counter - 1){
+                        printf("[%d]\n", getpid());
+                    }
+
                     // Si no es el primer comando, conectar la entrada estándar al pipe anterior
                     if (i > 0) {
                         dup2(pipefd[(i - 1) * 2], STDIN_FILENO);
