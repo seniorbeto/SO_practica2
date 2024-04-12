@@ -1,10 +1,12 @@
-//P2-SSOO-23/24
+/*P2-SSOO-23/24
 
-//  MSH main file
-// Write your msh source code here
+Autores: Alberto Penas Díaz (100471939)
+         Natalia Rodríguez Navarro (100471976)
 
-//#include "parser.h"
-#include <stddef.h>			/* NULL */
+Módulo que simula una minishell
+*/
+
+#include <stddef.h>	
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -20,31 +22,30 @@
 
 int mycalc(char *argv[]);
 
-// files in case of redirection
+/* files in case of redirection */
 char filev[3][64];
 
-//to store the execvp second parameter
+/* to store the execvp second parameter */
 char *argv_execvp[8];
 
 void siginthandler(int param)
 {
 	printf("****  Exiting MSH **** \n");
-	//signal(SIGINT, siginthandler);
 	exit(0);
 }
 
 
 struct command
 {
-  // Store the number of commands in argvv
+  /* Store the number of commands in argvv */
   int num_commands;
-  // Store the number of arguments of each command
+  /* Store the number of arguments of each command */
   int *args;
-  // Store the commands
+  /* Store the commands */
   char ***argvv;
-  // Store the I/O redirection
+  /* Store the I/O redirection */
   char filev[3][64];
-  // Store if the command is executed in background or foreground
+  /* Store if the command is executed in background or foreground */
   int in_background;
 };
 
@@ -175,10 +176,10 @@ int main(int argc, char* argv[])
         run_history=0;
     }
     else{
-        // Prompt 
+        /* Prompt */
         write(STDERR_FILENO, "MSH>>", strlen("MSH>>"));
 
-        // Get command
+        /* Get command */
         //********** DO NOT MODIFY THIS PART. IT DISTINGUISH BETWEEN NORMAL/CORRECTION MODE***************
         executed_cmd_lines++;
         if( end != 0 && executed_cmd_lines < end) {
@@ -222,40 +223,40 @@ int main(int argc, char* argv[])
             necesario que se ejecute en el mismo bloque de código.
             */
             if (!in_background){
-                // Comprobamos si el número de argumentos es correcto (un número entero positivo o ninguno)
+                /* Comprobamos si el número de argumentos es correcto (un número entero positivo o ninguno) */
                 if (argvv[0][1] != NULL && (argvv[0][2] != NULL || isdigit(*argvv[0][1]) == 0)) {
                     perror("Error: myhistory solo acepta un argumento entero o ninguno\n");
                     continue;
                 }
 				if (argvv[0][1] == NULL) {
-                    // Mostrar historial completo
+                    /* Mostrar historial completo */
                     int current = head;
                     for (int i = 0; i < n_elem; i++) {
                         fprintf(stderr, "%d ", i);
-                        // Iterar sobre todos los comandos de la entrada actual del historial
+                        /* Iterar sobre todos los comandos de la entrada actual del historial */
                         for (int j = 0; j < history[current].num_commands; j++) {
                             for (int k = 0; k < history[current].args[j]; k++) {
-                                // Imprimir cada argumento del comando
+                                /* Imprimir cada argumento del comando */
                                 fprintf(stderr, "%s ", history[current].argvv[j][k]);
                             }
                             if (j < history[current].num_commands - 1) {
-                                fprintf(stderr, "| "); // Separar comandos en la misma entrada con un pipe
+                                fprintf(stderr, "| "); /* Separar comandos en la misma entrada con un pipe */
                             }
                         }
-                        // Verificar y mostrar la redirección de entrada
+                        /* Verificar y mostrar la redirección de entrada */
                         if (strcmp(history[current].filev[0], "0") != 0) {
                             fprintf(stderr, "< %s ", history[current].filev[0]);
                         }
-                        // Verificar y mostrar la redirección de salida
+                        /* Verificar y mostrar la redirección de salida */
                         if (strcmp(history[current].filev[1], "0") != 0) {
                             fprintf(stderr, "> %s ", history[current].filev[1]);
                         }
-                        // Verificar y mostrar la redirección de errores
+                        /* Verificar y mostrar la redirección de errores */
                         if (strcmp(history[current].filev[2], "0") != 0) {
                             fprintf(stderr, "2> %s ", history[current].filev[2]);
                         }
                         if (history[current].in_background) {
-                            fprintf(stderr, "&"); // Indicar si el comando se ejecutó en background
+                            fprintf(stderr, "&"); /* Indicar si el comando se ejecutó en background */
                         }
                         fprintf(stderr, "\n");
                         current = (current + 1) % history_size;
@@ -263,7 +264,7 @@ int main(int argc, char* argv[])
                 } 
                 
                 else {
-                    // Intentar ejecutar un comando específico del historial
+                    /* Intentar ejecutar un comando específico del historial */
                     int index = atoi(argvv[0][1]);
                     
                     if (index < 0 || index >= n_elem) {
@@ -271,7 +272,7 @@ int main(int argc, char* argv[])
                     }
 
                     else {
-                        /*Modificamos el flag*/
+                        /* Modificamos el flag */
                         run_history_command = 1;
 
                         int actualIndex = (head + index) % history_size;
@@ -284,24 +285,24 @@ int main(int argc, char* argv[])
                         a introducirse en el historial.
                         */
 
-                        // Asignar valores del comando seleccionado para su re-ejecución
+                        /* Asignar valores del comando seleccionado para su re-ejecución */
                         command_counter = history[actualIndex].num_commands;
                         in_background = history[actualIndex].in_background;
-                        // Asignar redirecciones de archivo
+                        /* Asignar redirecciones de archivo */
                         for (int f = 0; f < 3; f++) {
                             strcpy(filev[f], history[actualIndex].filev[f]);
                         }
 
-                        // Asignar comandos y argumentos
+                        /* Asignar comandos y argumentos */
                         for (int i = 0; i <= history[actualIndex].num_commands; i++) {
-                            // Asignar número de argumentos para el comando actual
+                            /* Asignar número de argumentos para el comando actual */
                             int num_args = history[actualIndex].args[i];
                             argvv[i] = (char **)calloc(num_args + 1, sizeof(char *));
                             
                             for (int j = 0; j < num_args; j++) {
                                 argvv[i][j] = strdup(history[actualIndex].argvv[i][j]);
                             }
-                            // El último argumento debe ser NULL para indicar el fin de los argumentos
+                            /* El último argumento debe ser NULL para indicar el fin de los argumentos */
                             argvv[i][num_args] = NULL;
                         }
 
@@ -317,21 +318,21 @@ int main(int argc, char* argv[])
         if (strcmp(argvv[0][0], "mycalc") == 0){
             if (!in_background){
 				mycalc(argvv[0]);
-                // Llamada a store_command para almacenar el comando actual en el historial
+                /* Llamada a store_command para almacenar el comando actual en el historial */
                 store_command(argvv, filev, in_background, &history[tail]);
 
-                // Actualizar el índice tail para apuntar al próximo espacio libre
+                /* Actualizar el índice tail para apuntar al próximo espacio libre */
                 tail = (tail + 1) % history_size;
 
-                // Ajustar el número de elementos y el índice head si es necesario
+                /* Ajustar el número de elementos y el índice head si es necesario */
                 if
                 (n_elem < history_size) {
                     n_elem++;
                 }
                 else {
-                    // Liberar la memoria del comando más antiguo
+                    /* Liberar la memoria del comando más antiguo */
                     free_command(&history[head]);
-                    head = (head + 1) % history_size; // El historial está lleno, avanzar head
+                    head = (head + 1) % history_size; /* El historial está lleno, avanzar head */
                 }
 			}
 			else{
@@ -341,21 +342,21 @@ int main(int argc, char* argv[])
         }
         if((command_counter > 0 && strcmp(argvv[0][0], "mycalc") != 0 && strcmp(argvv[0][0], "myhistory") != 0) || 
             (run_history_command == 1 && strcmp(argvv[0][0], "mycalc"))){
-            // Almacenamos el comando actual en el historial
+            /* Almacenamos el comando actual en el historial */
             store_command(argvv, filev, in_background, &history[tail]);
 
-            // Actualizar el índice tail para apuntar al próximo espacio libre
+            /* Actualizar el índice tail para apuntar al próximo espacio libre */
             tail = (tail + 1) % history_size;
 
-            // Ajustar el número de elementos y el índice head si es necesario
+            /* Ajustar el número de elementos y el índice head si es necesario */
             if
             (n_elem < history_size) {
                 n_elem++;
             }
             else {
-                // Liberar la memoria del comando más antiguo
+                /* Liberar la memoria del comando más antiguo */
                 free_command(&history[head]);
-                head = (head + 1) % history_size; // El historial está lleno, avanzar head
+                head = (head + 1) % history_size; /* El historial está lleno, avanzar head */
             }
 
             int i;
@@ -365,7 +366,7 @@ int main(int argc, char* argv[])
             */
             int pipefd[2 * (command_counter - 1)];
 
-            // Crear todos los pipes necesarios de antemano
+            /* Crear todos los pipes necesarios de antemano */
             for (i = 0; i < command_counter - 1; i++) {
                 if (pipe(pipefd + i*2) < 0) {
                     perror("pipe");
@@ -377,28 +378,28 @@ int main(int argc, char* argv[])
 
             for (i = 0; i < command_counter; i++) {
                 pid = fork();
-                if (pid == 0) { // Proceso hijo
-                    // Si se está ejecutando en background, imprimiremos el pid del último proceso
+                if (pid == 0) { /* Proceso hijo */
+                    /* Si se está ejecutando en background, imprimiremos el pid del último proceso */
                     if(in_background && i == command_counter - 1){
                         printf("[%d]\n", getpid());
                     }
 
-                    // Si no es el primer comando, conectaremos la entrada estándar al pipe anterior
+                    /* Si no es el primer comando, conectaremos la entrada estándar al pipe anterior */
                     if (i > 0) {
                         dup2(pipefd[(i - 1) * 2], STDIN_FILENO);
                     }
 
-                    // Si no es el último comando, conectaremos la salida estándar al siguiente pipe
+                    /* Si no es el último comando, conectaremos la salida estándar al siguiente pipe */
                     if (i < command_counter - 1) {
                         dup2(pipefd[i * 2 + 1], STDOUT_FILENO);
                     }
 
-                    // Cerrar todos los descriptores de archivo de pipes
+                    /* Cerrar todos los descriptores de archivo de pipes */
                     for (int j = 0; j < 2 * (command_counter - 1); j++) {
                         close(pipefd[j]);
                     }
 
-                    // Redirección de salida
+                    /* Redirección de salida */
                     if (i == command_counter - 1 && strcmp(filev[1], "0") != 0) {
                         int fd_out = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
                         if (fd_out == -1) {
@@ -409,7 +410,7 @@ int main(int argc, char* argv[])
                         close(fd_out);
                     }
 
-                    // Redirección de entrada
+                    /* Redirección de entrada */
                     if (i == 0 && strcmp(filev[0], "0") != 0) {
                         int fd_in = open(filev[0], O_RDONLY);
                         if (fd_in == -1) {
@@ -420,7 +421,7 @@ int main(int argc, char* argv[])
                         close(fd_in);
                     }
 
-                    // Redirección de errores
+                    /* Redirección de errores */
                     if (i == 0 && strcmp(filev[2], "0") != 0) {
                         int fd_err = open(filev[2], O_WRONLY | O_CREAT | O_TRUNC, 0644);
                         if (fd_err == -1) {
@@ -431,9 +432,9 @@ int main(int argc, char* argv[])
                         close(fd_err);
                     }
 
-                    // Ejecutar el comando
+                    /* Ejecutar el comando */
                     execvp(argvv[i][0], argvv[i]);
-                    // Si execvp devuelve algún valor, hubo un error
+                    /* Si execvp devuelve algún valor, hubo un error */
                     perror("execvp");
                     exit(EXIT_FAILURE);
 
@@ -468,7 +469,7 @@ int main(int argc, char* argv[])
 }
 
 int mycalc(char *argv[]) {
-    // Verificar que se pasaron los argumentos correctamente
+    /* Verificar que se pasaron los argumentos correctamente */
     if (argv[1] == NULL || argv[2] == NULL || argv[3] == NULL) {
         printf("[ERROR] La estructura del comando es mycalc <operando 1> <add/mul/div> <operando 2>\n");
         return -1;
@@ -488,14 +489,14 @@ int mycalc(char *argv[]) {
     int resultado;
     char *operacion = argv[2];
 
-    // Obtener valor actual de Acc
+    /* Obtener valor actual de Acc */
     char *acc_str = getenv("Acc");
     int acc = (acc_str != NULL) ? atoi(acc_str) : 0;
 
     if (strcmp(operacion, "add") == 0) {
         resultado = op1 + op2;
         acc += resultado;
-        // Actualizar el valor de Acc
+        /* Actualizar el valor de Acc */
         char acc_buffer[20];
         snprintf(acc_buffer, 20, "%d", acc);
         setenv("Acc", acc_buffer, 1);
