@@ -22,19 +22,6 @@ Módulo que simula una minishell
 
 int mycalc(char *argv[]);
 
-/* files in case of redirection */
-char filev[3][64];
-
-/* to store the execvp second parameter */
-char *argv_execvp[8];
-
-void siginthandler(int param)
-{
-	printf("****  Exiting MSH **** \n");
-	exit(0);
-}
-
-
 struct command
 {
   /* Store the number of commands in argvv */
@@ -49,11 +36,26 @@ struct command
   int in_background;
 };
 
-int history_size = 20;
+void free_command(struct command *cmd);
+
+/* files in case of redirection */
+char filev[3][64];
+
+/* to store the execvp second parameter */
+char *argv_execvp[8];
+
+int history_size = 4;
 struct command * history;
 int head = 0;
 int tail = 0;
 int n_elem = 0;
+
+void siginthandler(int param)
+{
+	printf("****  Exiting MSH **** \n");
+    free_command(history);
+	exit(0);
+}
 
 void free_command(struct command *cmd)
 {
@@ -159,7 +161,7 @@ int main(int argc, char* argv[])
 	/*********************************/
 
 	char ***argvv = NULL;
-	int num_commands;
+	int num_commands = 0;
 
 	history = (struct command*) malloc(history_size *sizeof(struct command));
 	int run_history = 0;
@@ -317,7 +319,6 @@ int main(int argc, char* argv[])
         }
         if (strcmp(argvv[0][0], "mycalc") == 0){
             if (!in_background){
-				mycalc(argvv[0]);
                 /* Llamada a store_command para almacenar el comando actual en el historial */
                 store_command(argvv, filev, in_background, &history[tail]);
 
@@ -330,10 +331,9 @@ int main(int argc, char* argv[])
                     n_elem++;
                 }
                 else {
-                    /* Liberar la memoria del comando más antiguo */
-                    free_command(&history[head]);
                     head = (head + 1) % history_size; /* El historial está lleno, avanzar head */
                 }
+                mycalc(argvv[0]);
 			}
 			else{
 				perror("Error: mycalc no se puede ejecutar en background \n");
@@ -341,7 +341,7 @@ int main(int argc, char* argv[])
 			}
         }
         if((command_counter > 0 && strcmp(argvv[0][0], "mycalc") != 0 && strcmp(argvv[0][0], "myhistory") != 0) || 
-            (run_history_command == 1 && strcmp(argvv[0][0], "mycalc"))){
+            (run_history_command == 1 && strcmp(argvv[0][0], "mycalc") != 0)){
             /* Almacenamos el comando actual en el historial */
             store_command(argvv, filev, in_background, &history[tail]);
 
@@ -354,8 +354,6 @@ int main(int argc, char* argv[])
                 n_elem++;
             }
             else {
-                /* Liberar la memoria del comando más antiguo */
-                free_command(&history[head]);
                 head = (head + 1) % history_size; /* El historial está lleno, avanzar head */
             }
 
@@ -464,6 +462,9 @@ int main(int argc, char* argv[])
             }
         }
 	}
+
+    /* Free memory */
+    free_command(&history[head]);
 	
 	return 0;
 }
