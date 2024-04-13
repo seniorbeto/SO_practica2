@@ -205,7 +205,7 @@ int main(int argc, char* argv[])
         int run_history_command = 0;
 
         if (command_counter > MAX_COMMANDS){
-            perror("Error: Max number of commands exceeded\n");
+            printf("Error: Max number of commands exceeded\n");
             exit(EXIT_FAILURE);
         }
         if(command_counter == 0){
@@ -226,7 +226,7 @@ int main(int argc, char* argv[])
             if (!in_background){
                 /* Comprobamos si el número de argumentos es correcto (un número entero positivo o ninguno) */
                 if (argvv[0][1] != NULL && (argvv[0][2] != NULL || isdigit(*argvv[0][1]) == 0)) {
-                    perror("Error: myhistory solo acepta un argumento entero o ninguno\n");
+                    printf("Error: myhistory solo acepta un argumento entero o ninguno\n");
                     continue;
                 }
 				if (argvv[0][1] == NULL) {
@@ -335,7 +335,7 @@ int main(int argc, char* argv[])
                 mycalc(argvv[0]);
 			}
 			else{
-				perror("Error: mycalc no se puede ejecutar en background \n");
+				printf("Error: mycalc no se puede ejecutar en background \n");
                 continue;
 			}
         }
@@ -443,20 +443,16 @@ int main(int argc, char* argv[])
             
             if (!in_background) {
                 /*
+                El proceso padre cierra todos los descriptores de archivo de pipes.
+                */
+                for (i = 0; i < 2 * (command_counter - 1); i++) {
+                    close(pipefd[i]);
+                }
+                /*
                 Utilizamos un while para eliminar procesos zombies de ejecuciones background anteriores
                 además de las ejecuciones en foreground actuales.
                 */
                 while(wait(&status) != pid);
-
-                if (status != 0) {
-                    perror("Error: El comando no se ejecutó correctamente\n");
-                }
-            }
-            /*
-            El proceso padre cierra todos los descriptores de archivo de pipes.
-            */
-            for (i = 0; i < 2 * (command_counter - 1); i++) {
-                close(pipefd[i]);
             }
         }
 	}
