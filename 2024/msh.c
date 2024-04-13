@@ -44,7 +44,7 @@ char filev[3][64];
 /* to store the execvp second parameter */
 char *argv_execvp[8];
 
-int history_size = 4;
+int history_size = 20;
 struct command * history;
 int head = 0;
 int tail = 0;
