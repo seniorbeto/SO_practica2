@@ -99,7 +99,7 @@ void store_command(char ***argvv, char filev[3][64], int in_background, struct c
     (*cmd).argvv = (char ***) calloc((num_commands) ,sizeof(char **));
     (*cmd).args = (int*) calloc(num_commands , sizeof(int));
 
-    for( int i = 0; i < num_commands; i++)
+    for( int i = 0; i < num_commands-1; i++)
     {
         int args= 0;
         while( argvv[i][args] != NULL ){
@@ -110,8 +110,8 @@ void store_command(char ***argvv, char filev[3][64], int in_background, struct c
         int j;
         for (j=0; j<args; j++)
         {
-            (*cmd).argvv[i][j] = (char *)calloc(strlen(argvv[i][j]),sizeof(char));
-            strcpy((*cmd).argvv[i][j], argvv[i][j] );
+            (*cmd).argvv[i][j] = (char *)calloc(strlen(argvv[i][j]), sizeof(char));
+            strcpy((*cmd).argvv[i][j], argvv[i][j]);
         }
     }
 }
@@ -161,7 +161,6 @@ int main(int argc, char* argv[])
 	/*********************************/
 
 	char ***argvv = NULL;
-	int num_commands = 0;
 
 	history = (struct command*) malloc(history_size *sizeof(struct command));
 	int run_history = 0;
@@ -464,8 +463,7 @@ int main(int argc, char* argv[])
 	}
 
     /* Free memory */
-    free_command(&history[head]);
-	
+    free_command(history);
 	return 0;
 }
 
