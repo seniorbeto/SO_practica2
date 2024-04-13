@@ -440,15 +440,8 @@ int main(int argc, char* argv[])
                     exit(EXIT_FAILURE);
                 }
             }
-
+            
             if (!in_background) {
-                /*
-                El proceso padre cierra todos los descriptores de archivo de pipes.
-                */
-                for (i = 0; i < 2 * (command_counter - 1); i++) {
-                    close(pipefd[i]);
-                }
-
                 /*
                 Utilizamos un while para eliminar procesos zombies de ejecuciones background anteriores
                 además de las ejecuciones en foreground actuales.
@@ -458,6 +451,12 @@ int main(int argc, char* argv[])
                 if (status != 0) {
                     perror("Error: El comando no se ejecutó correctamente\n");
                 }
+            }
+            /*
+            El proceso padre cierra todos los descriptores de archivo de pipes.
+            */
+            for (i = 0; i < 2 * (command_counter - 1); i++) {
+                close(pipefd[i]);
             }
         }
 	}
